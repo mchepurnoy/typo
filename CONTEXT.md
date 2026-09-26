@@ -48,6 +48,10 @@ _Avoid_: undo, rollback
 A word that is never corrected again, recorded by a revert or added by hand; the user can review and remove them.
 _Avoid_: whitelist entry, ignore rule
 
+**Learned word**:
+A word the user converted manually; from then on its keys are corrected automatically, whatever detection says. The opposite of an exception.
+_Avoid_: rule, custom correction
+
 **Layout switch**:
 Changing the active macOS layout, done only after several consecutive corrections in the same direction (default two), so a single foreign term does not flip the layout.
 _Avoid_: auto-switch

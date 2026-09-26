@@ -52,6 +52,12 @@ It works in every app, stores nothing the user types, talks to the network only 
 25. As a user, I want to see, remove and manually add exceptions in settings, so that I stay in control of what typo ignores.
 26. As a typist, I want Backspace that is not immediately after a correction to behave normally and just shorten the current word, so that ordinary editing is unaffected.
 
+### Learned words
+
+27a. As a typist, I want a word I converted with the hotkey to be learned, so that the next time I type the same keys in the wrong layout typo corrects it automatically.
+27b. As a user, I want to see and remove learned words in settings next to exceptions, so that a one-off manual conversion doesn't haunt me.
+27c. As a user, I want reverting an automatic correction of a learned word to drop it from learned words and make it an exception, so that the last thing I did wins.
+
 ### Manual conversion
 
 27. As a typist, I want a hotkey (default: double-tap Shift) that converts the last word to the other script regardless of detection, so that I can fix what typo missed.
@@ -108,10 +114,12 @@ It works in every app, stores nothing the user types, talks to the network only 
 - **Engine** (pure Swift package, no AppKit/Carbon imports, the single test seam). A state machine that consumes input events and returns, for each event, whether to pass or swallow it plus a list of actions.
   - Input events: `key(keycode, shift)`, `boundary(kind)`, `backspace`, `reset(reason)` (mouse, navigation, chord, app switch), `hotkey`, `appActivated(bundleID)`, together with the current layout and the set of enabled layouts.
   - Actions: `erase(count)`, `type(text)`, `replayBoundary`, `selectLayout(id)`, `recordException(word)`, `signalCorrection`.
-  - Owns: the current **word** (as keys, never as characters), the last correction (for revert), the layout-switch streak, and the rules for correction, short words, skipped words, revert, exceptions, manual conversion, excluded apps and pause.
+  - Owns: the current **word** (as keys, never as characters), the last correction (for revert), the layout-switch streak, and the rules for correction, short words, skipped words, revert, exceptions, learned words, manual conversion, excluded apps and pause.
+  - Actions also include `recordLearnedWord(keys)`; settings seed the Engine with exceptions and learned words at start.
 - **Layouts** (inside Engine, behind a small protocol). Reads a word's keys under any layout. Production implementation wraps `UCKeyTranslate` over each enabled input source's Unicode key layout data; tests use fixed key tables captured from U.S., Russian – PC, German and Spanish. Each layout knows its script and its language (if supported).
 - **Detector** (inside Engine). Given a word and the enabled layouts, decides whether it is plausible as typed and which re-reading, if any, is clearly plausible. Scores with per-language **language models**: a word-frequency lexicon plus character n-gram log-probabilities, so unknown words (`nginx`) are still judged by how they look. Tolerant to one-key typos by construction (n-grams, not exact lookup). Decisions use a margin threshold between the best implausible-as-typed score and the best re-read score, tuned against the accuracy corpus.
-- **Language model data**: one data file per supported language (English, Russian, German, Spanish), built offline by a script from an external source and bundled with the app. Adding a language is adding a data file. The source must be GPLv3-compatible (ADR 0002); the choice is pending the research in `docs/research/`.
+- **Language model data**: one data file per supported language (English, Russian, German, Spanish) holding character trigram log-probabilities and a frequency lexicon, built offline by a script from the **Leipzig Corpora Collection** downloadable corpora (CC BY; attribution in the app's About and the repo) and bundled with the app. Adding a language is adding a data file. When scoring, `ё` is folded to `е`; output always keeps the character the key produced.
+- **System spell check** (`NSSpellChecker`) is a cross-check for "is this a real word", behind a protocol the Engine receives, so the Engine stays AppKit-free and tests use the bundled lexicon only. It is never called inside the tap callback; it is warmed up at launch. It is not the sole criterion (it accepts many random 2-letter strings and trailing punctuation, and rejects lowercased German nouns).
 - **macOS adapter** (app target, thin, manually tested). Installs a session-level `CGEventTap` (default tap, key-down + mouse-down), translates events into Engine events, performs Engine actions with `CGEvent` posting and `TISSelectInputSource`, re-enables the tap on `tapDisabledByTimeout`/`tapDisabledByUserInput`, observes app activation and input source changes.
 - **App shell** (SwiftUI, `MenuBarExtra`, `Settings` scene, `LSUIElement`). Menu, settings tabs, onboarding window with Accessibility polling (`AXIsProcessTrustedWithOptions`), launch at login via `SMAppService`, Sparkle 2 updater, String Catalog localisation (EN, RU).
 - **Settings store**: `UserDefaults` for preferences and the exception list. Nothing else is persisted (ADR 0003).
@@ -135,7 +143,7 @@ These refine the prototype, which posted everything synchronously inside the tap
 - **Tap health.** Re-enable the tap on `tapDisabledByUserInput` and `tapDisabledByTimeout`, but back off (e.g. 60 s) after repeated timeouts within a minute instead of re-enabling in a loop. No disk I/O, spell-checker cold lookups or AX IPC inside the callback; language models are loaded into memory at launch.
 - **Permissions.** Accessibility (event posting / active filtering) **and** Input Monitoring (listening) — separate grants on macOS 14, possibly merged on macOS 26. Onboarding checks each with `AXIsProcessTrustedWithOptions`, `CGPreflightListenEventAccess` and `CGPreflightPostEventAccess`, requests with `CGRequestListenEventAccess` / `CGRequestPostEventAccess`, and shows the state of each.
 - **Distribution.** Non-sandboxed, hardened runtime, Developer ID, notarized (consistent with ADR 0001).
-- **Detector shape**, following xneur and translit: a cheap first pass over impossible character bigrams/trigrams per language, then n-gram log-probability scoring, with a real-word lexicon check that outranks n-gram scores; preceding-word language ("stickiness") feeds the short-word rule. `NSSpellChecker` is rejected for the hot path (cold lookups take tens of ms and it is main-thread bound).
+- **Detector shape**, following xneur and translit: a cheap first pass over impossible character bigrams/trigrams per language, then n-gram log-probability scoring, with a real-word lexicon check that outranks n-gram scores; preceding-word language ("stickiness") feeds the short-word rule. Detection runs off the tap callback's critical section; `NSSpellChecker` only as a warmed-up cross-check (see Language model data).
 
 ### Other decisions
 
@@ -149,7 +157,7 @@ These refine the prototype, which posted everything synchronously inside the tap
 
 - A good test drives the Engine only through its public event→actions interface and asserts on the returned pass/swallow decision and actions, never on internal state. Tests read like scenarios: "on U.S. with Russian – PC enabled, typing `ghbdtn` then Space swallows Space and yields erase(6), type("привет"), replayBoundary".
 - The Engine is the only unit-tested module. Behaviour tests cover every glossary rule: correction, skipped word, short word, layout switch streak and reset, revert by Backspace and by hotkey, exception recording and honouring, manual conversion, excluded app, pause, reset events, capitalisation, cross-script-only, multiple Latin layouts, unsupported layout.
-- An accuracy test runs a corpus of (layout, keys, expected output or "no change") cases through the Engine with the real language model data and asserts on a minimum hit rate for wrong-layout words and a near-zero false-positive rate on normal EN/RU/DE/ES text and technical terms. The corpus includes the cases found during the prototype (`тпштч` → `nginx`, `сщву` → `code`).
+- An accuracy test runs a corpus of (layout, keys, expected output or "no change") cases through the Engine with the real language model data and asserts on a minimum hit rate for wrong-layout words and a near-zero false-positive rate on normal EN/RU/DE/ES text and technical terms. The corpus includes the cases found during the prototype (`тпштч` → `nginx`, `сщву` → `code`) and, as a first-class category, Russian words containing letters that sit on U.S. punctuation keys (`б ю ж э х ъ ё`, ~30% of frequent Russian words), which the research benchmark left untested. Research baseline to beat: ~98–99% recall at ~0% false positives on 6+ letter EN↔RU words.
 - A performance test asserts the per-word decision budget.
 - The macOS adapter and app shell are verified manually with a checklist in TextEdit, Safari, Chrome, Terminal and an Electron app (e.g. VS Code or Slack): correction, revert, layout switch, fast typing without artifacts, password fields, permission revoke/regrant.
 - No prior art exists in the repo; the Engine test suite establishes the convention (Swift Testing, `swift test`).
@@ -157,7 +165,9 @@ These refine the prototype, which posted everything synchronously inside the tap
 ## Out of Scope
 
 - Spelling fixes (`teh` → `the`) — planned right after the MVP as a separate, separately toggled feature.
-- Local AI (NaturalLanguage, Foundation Models, Core ML) for detection — after the MVP; the Detector stays swappable for it.
+- Retroactive correction: holding an ambiguous word and correcting it once the next word confirms the language (`yt ghbdtn` → `не привет`) — the first feature after the MVP.
+- Learning from a word the user deletes and retypes by hand in the other layout (only hotkey conversions are learned in the MVP).
+- Local AI for detection — after the MVP; the Detector stays swappable. Research: Foundation Models does not support Russian and costs tens–hundreds of ms per call; `NLLanguageRecognizer` cannot tell layouts apart across scripts; a tiny CPU Core ML model (~53 µs) is the viable later option.
 - Corrections between layouts of the same script (EN ↔ DE ↔ ES, y/z swap, umlauts).
 - Converting selected text.
 - Fixing accidental Caps Lock.
@@ -170,7 +180,7 @@ These refine the prototype, which posted everything synchronously inside the tap
 
 - Glossary: `CONTEXT.md`. Decisions: `docs/adr/0001` (outside App Store), `0002` (GPLv3), `0003` (never store typed text).
 - Research: `docs/research/macos-layout-autofix-apis.md` (macOS APIs, permissions, fix pipeline, survey of open-source switchers). Useful references pinned there: arolus/translit (MIT, n-grams + Bloom filters), rshagiev/punto-switcher (fence-based fix pipeline), xneur (impossible n-gram tables).
-- Open: the language-model data source and the n-gram/lexicon format depend on a second research note on data licensing and local AI (in progress). The ticket that builds language model data is blocked on that choice. Known constraint so far: Punto's `ps.dat` is not reusable; FrequencyWords is CC-BY-SA; Hunspell dictionary licences vary per language.
+- Research on data and on-device AI: `docs/research/0001-language-data-and-local-ai.md`. Punto's `ps.dat` and keyboop's data are not reusable. Open from it: which CC BY version Leipzig means (check before first release); NSSpellChecker cold-start cost inside the real app.
 - macOS's "Automatically switch to a document's input source" setting can undo our layout switch; onboarding or settings should mention it.
 - Open unverified points to check by hand: event-tap timeout length, whether Backspace count equals composed characters when dead keys or system autocorrect are involved, and the effect of the 0.25 s local-events suppression interval.
 - Prototype: branch `prototype/event-tap`, `prototype/event-tap-spike/` — a single-file spike runnable with `run.sh`.
