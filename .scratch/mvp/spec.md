@@ -80,7 +80,7 @@ It works in every app, stores nothing the user types, talks to the network only 
 
 ### First run and permissions
 
-41. As a new user, I want an onboarding window explaining why Accessibility permission is needed and a button that opens the exact System Settings pane, so that setup takes seconds.
+41. As a new user, I want an onboarding window explaining why the Accessibility and Input Monitoring permissions are needed, showing the state of each, with buttons that open the exact System Settings panes, so that setup takes seconds.
 42. As a new user, I want typo to detect automatically when permission has been granted and start working, so that I don't need to restart it.
 43. As a user, I want typo to recover if the permission is revoked or the system disables its key listener, so that it doesn't silently stop working.
 44. As a user, I want "Launch at login" on by default and switchable, so that typo is always there.
@@ -119,11 +119,23 @@ It works in every app, stores nothing the user types, talks to the network only 
 ### Decisions validated by the prototype (branch `prototype/event-tap`)
 
 - Keys are captured as physical keycodes + Shift and re-read with `UCKeyTranslate` against each enabled layout's data; this correctly reads `,.;` on U.S. as `бюж` on Russian – PC. Never hardcode a key map.
-- Correction sequence on a boundary: swallow the boundary key-down, post `erase(original length)` as Backspaces, post the replacement as Unicode-string key events (layout-independent; chunked), then re-post a copy of the boundary event. Revert is the inverse. Revert is only offered when the boundary was Space or Tab (a replayed Return cannot be un-sent).
+- Correction sequence on a boundary: swallow the boundary key-down, post `erase(original length)` as Backspaces, post the replacement so it does not depend on the active layout, then re-post the boundary. Revert is the inverse. Revert is only offered when the boundary was Space or Tab (a replayed Return cannot be un-sent).
 - Our own synthetic events are marked via the `eventSourceUserData` field with a fixed tag and ignored by the tap; synthetic events use a private-state event source with cleared modifier flags.
-- Posting happens synchronously inside the tap callback, so user keystrokes that arrive during a correction queue behind it.
 - A `decide()` call on the trivial detector took ~0.005 ms; the per-word budget for the real detector is ≤ 1 ms p99, far below the perceptibility threshold.
-- The replay-keycodes-after-switching-layout approach was built but not validated; the Unicode-string approach is the chosen one.
+- The replay-keycodes-after-switching-layout approach was built but not validated; retyping independently of the active layout is the chosen one (research §4 agrees: never depend on a layout switch having landed).
+
+### Decisions from `docs/research/macos-layout-autofix-apis.md`
+
+These refine the prototype, which posted everything synchronously inside the tap callback and was not stress-tested:
+
+- **Fix pipeline with a fence.** While a fix is in flight the adapter is busy: real keystrokes are swallowed into a deferred queue; the fix events are posted, followed by a tagged "fence" event carrying a sequence number; when the fence comes back through the tap, the deferred keystrokes are re-posted as freshly created events (not copies). An 800 ms timeout flushes the queue if the fence never arrives. This keeps the tap callback O(µs) and allows pacing (a small delay between synthetic keystrokes) if some apps turn out to drop fast input.
+- **Retyping.** One character per key-down/up pair, using the target layout's keycode and modifier flags plus an explicit Unicode string, so apps that read keycodes and apps that read strings both get the right character.
+- **Layout switch** happens after the retype, for future typing only; all TIS calls run on the main thread; the switch is verified asynchronously via the selected-input-source-changed notification.
+- **Secure input.** While `IsSecureEventInputEnabled()` is true the engine receives a reset and nothing is buffered or corrected.
+- **Tap health.** Re-enable the tap on `tapDisabledByUserInput` and `tapDisabledByTimeout`, but back off (e.g. 60 s) after repeated timeouts within a minute instead of re-enabling in a loop. No disk I/O, spell-checker cold lookups or AX IPC inside the callback; language models are loaded into memory at launch.
+- **Permissions.** Accessibility (event posting / active filtering) **and** Input Monitoring (listening) — separate grants on macOS 14, possibly merged on macOS 26. Onboarding checks each with `AXIsProcessTrustedWithOptions`, `CGPreflightListenEventAccess` and `CGPreflightPostEventAccess`, requests with `CGRequestListenEventAccess` / `CGRequestPostEventAccess`, and shows the state of each.
+- **Distribution.** Non-sandboxed, hardened runtime, Developer ID, notarized (consistent with ADR 0001).
+- **Detector shape**, following xneur and translit: a cheap first pass over impossible character bigrams/trigrams per language, then n-gram log-probability scoring, with a real-word lexicon check that outranks n-gram scores; preceding-word language ("stickiness") feeds the short-word rule. `NSSpellChecker` is rejected for the hot path (cold lookups take tens of ms and it is main-thread bound).
 
 ### Other decisions
 
@@ -157,5 +169,8 @@ It works in every app, stores nothing the user types, talks to the network only 
 ## Further Notes
 
 - Glossary: `CONTEXT.md`. Decisions: `docs/adr/0001` (outside App Store), `0002` (GPLv3), `0003` (never store typed text).
-- Open: the language-model data source and the n-gram/lexicon format depend on `docs/research/` (in progress). The ticket that builds language model data is blocked on that choice.
+- Research: `docs/research/macos-layout-autofix-apis.md` (macOS APIs, permissions, fix pipeline, survey of open-source switchers). Useful references pinned there: arolus/translit (MIT, n-grams + Bloom filters), rshagiev/punto-switcher (fence-based fix pipeline), xneur (impossible n-gram tables).
+- Open: the language-model data source and the n-gram/lexicon format depend on a second research note on data licensing and local AI (in progress). The ticket that builds language model data is blocked on that choice. Known constraint so far: Punto's `ps.dat` is not reusable; FrequencyWords is CC-BY-SA; Hunspell dictionary licences vary per language.
+- macOS's "Automatically switch to a document's input source" setting can undo our layout switch; onboarding or settings should mention it.
+- Open unverified points to check by hand: event-tap timeout length, whether Backspace count equals composed characters when dead keys or system autocorrect are involved, and the effect of the 0.25 s local-events suppression interval.
 - Prototype: branch `prototype/event-tap`, `prototype/event-tap-spike/` — a single-file spike runnable with `run.sh`.
