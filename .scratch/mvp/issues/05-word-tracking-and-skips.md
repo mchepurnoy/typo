@@ -11,3 +11,7 @@
 - [ ] Manual: nothing is corrected in a password field; clicking elsewhere mid-word prevents a correction
 
 Spec: `.scratch/mvp/spec.md`. Glossary: `CONTEXT.md`.
+
+## Comments
+
+2026-09-26 — From ticket 01's review: the adapter builds `Key` from Shift only and ignores Caps Lock (`.maskAlphaShift`), so `GHBDTN` typed with Caps Lock on becomes lowercase `привет`. Capitalisation work should carry Caps Lock through to layout reading (`UCKeyTranslate` `alphaLock` modifier), not just Shift.
