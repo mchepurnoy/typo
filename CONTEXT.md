@@ -26,6 +26,10 @@ The alphabet a layout produces (Latin, Cyrillic). Corrections only ever cross sc
 Automatic replacement of a just-finished word with the same keys re-read under another layout, triggered at the word boundary, only when the original word is implausible in every supported language and the re-read one is clearly plausible.
 _Avoid_: fix, switch, conversion
 
+**Spelling fix**:
+Replacing a misspelled word with the intended word in the same layout (e.g. `teh` → `the`). A separate feature from correction, planned after the MVP; correction itself must still recognise wrong-layout words that also contain a typo.
+_Avoid_: typo correction, autocorrect
+
 **Short word**:
 A word of at most two keys; corrected automatically only when the previous word was corrected in the same direction.
 
