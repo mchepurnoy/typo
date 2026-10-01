@@ -15,8 +15,8 @@ final class KeyboardMonitor {
     private let eventSource = CGEventSource(stateID: .privateState)
     private var tap: CFMachPort?
 
-    init(languageModels: [LanguageModel]) {
-        engine = Engine(languageModels: languageModels)
+    init(languageModels: [LanguageModel], spellChecker: (any SpellChecker)?) {
+        engine = Engine(languageModels: languageModels, spellChecker: spellChecker)
     }
 
     /// Installs the tap. Fails until the app is trusted for Accessibility.

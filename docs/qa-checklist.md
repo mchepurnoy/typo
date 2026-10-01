@@ -33,6 +33,7 @@ Until ticket 09 (fenced fix pipeline) lands, type at a normal pace: a key typed 
 | `plan b␣` on U.S. is left alone (short word) | | | | | |
 | On Russian – PC, the keys of `hello␣` (`руддщ`) → `hello ` | | | | | |
 | On Russian – PC, `сщву␣` → `code `, `тпштч␣` → `nginx ` | | | | | |
+| `fdnjirjks␣` on U.S. → `автошколы ` (not in the bundled lexicon; confirmed by the system spell checker) | | | | | |
 | Typing a normal paragraph in English on U.S. changes nothing | | | | | |
 | Typing a normal paragraph in Russian on Russian – PC changes nothing | | | | | |
 | `ghbdtnn⌫␣` → `привет ` (Backspace edits the word) | | | | | |

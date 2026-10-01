@@ -44,8 +44,16 @@ private struct Tally {
     var wrongRate: Double { Double(wrong.count) / Double(max(words, 1)) }
 }
 
-private func run(_ scenario: Scenario) -> Tally {
-    var engine = Engine(languageModels: BundledModels.all)
+/// The worst spell-checker quirk: it says yes to anything written in a script other than `script`.
+private struct AcceptsOtherScript: SpellChecker {
+    let script: Script
+    func prepare(_ word: String, in language: Language) {}
+    func isWord(_ word: String, in language: Language) -> Bool? { language.script != script ? true : nil }
+    func forgetWords() {}
+}
+
+private func run(_ scenario: Scenario, spellChecker: (any SpellChecker)? = nil) -> Tally {
+    var engine = Engine(languageModels: BundledModels.all, spellChecker: spellChecker)
     let layouts = ActiveLayouts(current: scenario.typedOn, enabled: scenario.enabled)
     var tally = Tally()
     for word in corpus(scenario.language) {
@@ -96,6 +104,18 @@ struct AccuracyTests {
         let tally = run(scenario)
         print("false corrections \(scenario.testDescription): \(tally.wrong.count)/\(tally.words) \(tally.wrong.prefix(20))")
         #expect(tally.wrongRate <= 0.001, "\(tally.wrong)")
+    }
+
+    @Test("A spell checker that accepts every re-reading adds no false corrections", arguments: [
+        Scenario(language: .english, intendedOn: us, typedOn: us, enabled: [us, ru]),
+        Scenario(language: .russian, intendedOn: ru, typedOn: ru, enabled: [us, ru]),
+        Scenario(language: .german, intendedOn: de, typedOn: de, enabled: [de, ru]),
+    ])
+    private func quirkySpellChecker(_ scenario: Scenario) {
+        let baseline = run(scenario)
+        let quirky = run(scenario, spellChecker: AcceptsOtherScript(script: scenario.typedOn.language!.script))
+        print("false corrections with a yes-to-everything spell checker \(scenario.testDescription): \(quirky.wrong)")
+        #expect(quirky.wrong.count <= baseline.wrong.count, "\(quirky.wrong)")
     }
 
     @Test("Deciding a word takes at most 1 ms at p99", .timing)

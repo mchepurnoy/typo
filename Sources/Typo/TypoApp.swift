@@ -46,7 +46,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let models = await Task.detached(priority: .userInitiated) { Self.loadLanguageModels() }.value
             let loaded = Set(models.map(\.language))
             status.missingLanguages = Language.allCases.filter { !loaded.contains($0) }.map(\.rawValue)
-            monitor = KeyboardMonitor(languageModels: models)
+            let spellChecker = SystemSpellChecker()
+            spellChecker.warmUp()
+            monitor = KeyboardMonitor(languageModels: models, spellChecker: spellChecker)
             if startMonitor() { return }
             permissionPoll = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
                 MainActor.assumeIsolated { self?.pollPermission() }

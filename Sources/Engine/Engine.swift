@@ -7,9 +7,11 @@ public struct Engine: Sendable {
     private var recentLayouts: [Script: String] = [:]
     private let detector: Detector
 
-    /// - Parameter languageModels: one per supported language; languages without one never take part.
-    public init(languageModels: [LanguageModel]) {
-        detector = Detector(models: languageModels)
+    /// - Parameters:
+    ///   - languageModels: one per supported language; languages without one never take part.
+    ///   - spellChecker: an optional cross-check that can confirm words, never decide alone.
+    public init(languageModels: [LanguageModel], spellChecker: (any SpellChecker)? = nil) {
+        detector = Detector(models: languageModels, spellChecker: spellChecker)
     }
 
     public mutating func handle(_ event: InputEvent, layouts: ActiveLayouts) -> Response {
@@ -19,15 +21,17 @@ public struct Engine: Sendable {
         switch event {
         case .key(let key):
             word.append(key)
+            detector.prepareSpellCheck(for: word, layouts: layouts, recent: recentLayouts)
             return .pass
         case .backspace:
             if !word.isEmpty { word.removeLast() }
+            detector.prepareSpellCheck(for: word, layouts: layouts, recent: recentLayouts)
             return .pass
         case .reset:
-            word.removeAll()
+            forgetWord()
             return .pass
         case .boundary:
-            defer { word.removeAll() }
+            defer { forgetWord() }
             guard !word.isEmpty,
                   let correction = detector.correction(for: word, layouts: layouts, recent: recentLayouts)
             else {
@@ -35,5 +39,10 @@ public struct Engine: Sendable {
             }
             return .swallow([.erase(correction.original.count), .type(correction.replacement), .replayBoundary])
         }
+    }
+
+    private mutating func forgetWord() {
+        word.removeAll()
+        detector.spellChecker?.forgetWords()
     }
 }
