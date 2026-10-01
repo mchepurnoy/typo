@@ -8,9 +8,21 @@ struct TypoApp: App {
     @NSApplicationDelegateAdaptor private var delegate: AppDelegate
 
     var body: some Scene {
-        MenuBarExtra("Typo", systemImage: "keyboard") {
+        MenuBarExtra {
             MenuContent(delegate: delegate)
+        } label: {
+            MenuBarIcon(status: delegate.status, settings: delegate.settings)
         }
+    }
+}
+
+/// Its own view, so SwiftUI tracks the observable state it reads.
+private struct MenuBarIcon: View {
+    let status: Status
+    let settings: SettingsStore
+
+    var body: some View {
+        Image(systemName: settings.isPaused ? "pause.circle" : status.isFlashing ? "keyboard.fill" : "keyboard")
     }
 }
 
@@ -29,6 +41,9 @@ private struct MenuContent: View {
             Button("Set Up Permissions…") { delegate.showOnboarding() }
             Divider()
         }
+        @Bindable var settings = delegate.settings
+        Toggle("Pause Typo", isOn: $settings.isPaused)
+        Divider()
         let login = delegate.launchAtLogin
         Toggle("Launch at Login", isOn: Binding(get: { login.isEnabled }, set: { login.setEnabled($0) }))
         if login.needsApproval {
@@ -48,6 +63,18 @@ final class Status {
     var problem: String?
     /// Codes of supported languages whose model could not be loaded; they take no part in corrections.
     var missingLanguages: [String] = []
+    /// The menu-bar icon is briefly filled after a correction.
+    private(set) var isFlashing = false
+    @ObservationIgnored private var flashEnd: Task<Void, Never>?
+
+    func flash() {
+        isFlashing = true
+        flashEnd?.cancel()
+        flashEnd = Task {
+            try? await Task.sleep(for: .milliseconds(350))
+            if !Task.isCancelled { isFlashing = false }
+        }
+    }
 }
 
 @MainActor
@@ -59,6 +86,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let permissions = Permissions()
     let launchAtLogin = LaunchAtLogin()
     private lazy var onboarding = OnboardingWindow(permissions: permissions)
+    /// Loaded once, up front: not inside the event tap.
+    private let correctionSound = NSSound(named: "Tink")
     /// Created once the language models are loaded.
     private var monitor: KeyboardMonitor?
     /// Accessibility was granted while typo ran.
@@ -85,13 +114,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             status.missingLanguages = Language.allCases.filter { !loaded.contains($0) }.map(\.rawValue)
             let spellChecker = SystemSpellChecker()
             spellChecker.warmUp()
-            monitor = KeyboardMonitor(languageModels: models, spellChecker: spellChecker, settings: settings)
+            let monitor = KeyboardMonitor(languageModels: models, spellChecker: spellChecker, settings: settings)
+            monitor.onRewrite = { [weak self] in self?.correctionFeedback() }
+            self.monitor = monitor
             syncWithPermissions()
         }
     }
 
     func showOnboarding() {
         onboarding.show()
+    }
+
+    private func correctionFeedback() {
+        status.flash()
+        guard settings.playsSound, let correctionSound else { return }
+        // A sound still playing would ignore play(): restart it, one per correction
+        correctionSound.stop()
+        correctionSound.play()
     }
 
     /// Runs the tap exactly while Accessibility is granted: starts it as soon as it is (no relaunch),

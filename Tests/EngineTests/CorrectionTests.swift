@@ -116,7 +116,7 @@ struct CorrectionTests {
         #expect(typist.press(.boundary(.space)) == .swallow([.erase(6), .type("привет"), .replayBoundary]))
     }
 
-    @Test("A reset forgets the keys typed before it", arguments: [ResetReason.mouse, .navigation, .chord, .appSwitch, .missedInput])
+    @Test("A reset forgets the keys typed before it", arguments: [ResetReason.mouse, .navigation, .chord, .missedInput])
     func resetForgetsWord(_ reason: ResetReason) {
         var typist = Typist(on: us)
         typist.type("ghbdtn", as: us)

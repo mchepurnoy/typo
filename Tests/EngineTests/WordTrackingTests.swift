@@ -22,7 +22,7 @@ private struct Session {
 @Suite("Word tracking and skipped words")
 struct WordTrackingTests {
     @Test("Every reset reason forgets the word, so a correction never reaches back before it", arguments: [
-        ResetReason.mouse, .navigation, .chord, .appSwitch, .missedInput, .secureInput,
+        ResetReason.mouse, .navigation, .chord, .missedInput, .secureInput,
     ])
     func resets(_ reason: ResetReason) {
         var session = Session()

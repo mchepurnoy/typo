@@ -48,12 +48,21 @@ final class KeyboardMonitor {
     /// A layout switch requested by a fix, made once the pipeline is idle.
     private var pendingLayout: String?
     private var recentTimeouts: [UInt64] = []
+    /// The process the last key went to and its bundle ID: keys can go to a panel (Spotlight)
+    /// that never becomes the active app.
+    private var keyTarget: (pid: Int64, bundleID: String?)?
+    /// Called after typo rewrote a word (a correction, a conversion or a revert).
+    var onRewrite: (() -> Void)?
     private var isBackingOff = false
 
     init(languageModels: [LanguageModel], spellChecker: (any SpellChecker)?, settings: SettingsStore) {
         engine = Engine(languageModels: languageModels, spellChecker: spellChecker, settings: settings.engineSettings)
         self.settings = settings
-        settings.onChange = { [weak self] in self?.engine.settings = $0 }
+        settings.onChange = { [weak self] in
+            self?.engine.settings = $0
+            // Pause means no more changes, including a switch a fix asked for
+            if $0.isPaused { self?.pendingLayout = nil }
+        }
 
         // The tap sees no keys while secure input is on, so check for it rather than wait for one
         let secureInputCheck = Timer(timeInterval: 0.5, repeats: true) { [weak self] _ in
@@ -65,9 +74,12 @@ final class KeyboardMonitor {
 
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.send(.reset(.appSwitch)) }
+        ) { [weak self] notification in
+            let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+            let bundleID = app?.bundleIdentifier
+            MainActor.assumeIsolated { self?.send(.appActivated(bundleID)) }
         }
+        send(.appActivated(NSWorkspace.shared.frontmostApplication?.bundleIdentifier))
     }
 
     var isRunning: Bool { tap != nil }
@@ -151,6 +163,8 @@ final class KeyboardMonitor {
     /// Feeds a key-down to the Engine and starts the fix it asks for. Returns whether the key passes.
     private func keyDown(_ event: CGEvent) -> Bool {
         doubleTap.otherInput()
+        trackKeyTarget(event)
+        if engine.isInactive { return true }
         if IsSecureEventInputEnabled() {
             // A password field: track nothing (normally the tap does not even see these keys)
             send(.reset(.secureInput))
@@ -166,6 +180,16 @@ final class KeyboardMonitor {
         let response = engine.handle(input, layouts: layouts.active)
         run(response.actions, boundary: event)
         return response.disposition == .pass
+    }
+
+    /// Tells the Engine when keys start going to another app than the active one.
+    private func trackKeyTarget(_ event: CGEvent) {
+        let pid = event.getIntegerValueField(.eventTargetUnixProcessID)
+        guard pid > 0, pid != keyTarget?.pid else { return }
+        let bundleID = NSRunningApplication(processIdentifier: pid_t(pid))?.bundleIdentifier
+        let changed = keyTarget != nil && bundleID != keyTarget?.bundleID
+        keyTarget = (pid, bundleID)
+        if changed { send(.appActivated(bundleID)) }
     }
 
     /// Re-enables the tap, unless it keeps timing out: then it rests for a while instead of
@@ -259,6 +283,7 @@ final class KeyboardMonitor {
                 settings.forgetLearnedWord(word)
             }
         }
+        if actions.contains(where: { if case .type = $0 { true } else { false } }) { onRewrite?() }
         if posted {
             postFence()
         } else if awaitedFence == nil, deferred.isEmpty {

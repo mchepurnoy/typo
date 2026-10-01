@@ -12,11 +12,20 @@ public struct Engine: Sendable {
         public var exceptions: Set<String>
         /// Lowercased typed words always corrected, recorded by manual conversion.
         public var learnedWords: Set<String>
+        /// Stops everything until resumed.
+        public var isPaused: Bool
+        /// Bundle IDs of apps typo ignores entirely.
+        public var excludedApps: Set<String>
 
-        public init(switchThreshold: Int? = 2, exceptions: Set<String> = [], learnedWords: Set<String> = []) {
+        public init(
+            switchThreshold: Int? = 2, exceptions: Set<String> = [], learnedWords: Set<String> = [],
+            isPaused: Bool = false, excludedApps: Set<String> = []
+        ) {
             self.switchThreshold = switchThreshold
             self.exceptions = exceptions
             self.learnedWords = learnedWords
+            self.isPaused = isPaused
+            self.excludedApps = excludedApps
         }
     }
 
@@ -28,6 +37,10 @@ public struct Engine: Sendable {
     /// The layout the word's last key was typed on; the word is read under it, even if the layout
     /// changes before the boundary.
     private var wordLayout: (any Layout)?
+    /// The bundle ID of the active app, as last reported.
+    private var activeApp: String?
+    /// Whether the previous event found typo inactive, so the state is cleared once on the way in.
+    private var wasInactive: Bool?
     /// The most recently active layout per script: the target when several layouts share a script.
     private var recentLayouts: [Script: String] = [:]
     /// Consecutive corrections towards one target layout, ended by a word that needed none.
@@ -64,10 +77,23 @@ public struct Engine: Sendable {
         self.settings = settings
     }
 
+    /// Whether typo is off right now: paused, or an excluded app is active.
+    public var isInactive: Bool {
+        settings.isPaused || activeApp.map(settings.excludedApps.contains) == true
+    }
+
     public mutating func handle(_ event: InputEvent, layouts: ActiveLayouts) -> Response {
+        if case .appActivated(let app) = event { activeApp = app }
         if let script = layouts.current.language?.script {
             recentLayouts[script] = layouts.current.id
         }
+        // Paused, or in an excluded app: track nothing, change nothing
+        if isInactive {
+            if wasInactive != true { forgetAll() }
+            wasInactive = true
+            return .pass
+        }
+        wasInactive = false
         let justConverted = revertible
         let justFinished = finished
         revertible = nil
@@ -90,9 +116,8 @@ public struct Engine: Sendable {
             }
             prepareSpellCheck(layouts)
             return .pass
-        case .reset:
-            forgetWord()
-            streak = nil
+        case .reset, .appActivated:
+            forgetAll()
             return .pass
         case .hotkey:
             // The hotkey itself (a modifier) passes; only the actions matter
@@ -223,6 +248,14 @@ public struct Engine: Sendable {
     private func prepareSpellCheck(_ layouts: ActiveLayouts) {
         guard let wordLayouts = trackedWordLayouts(layouts) else { return }
         detector.prepareSpellCheck(for: word, layouts: wordLayouts, recent: recentLayouts)
+    }
+
+    /// Forgets the word and everything that ties the next event to earlier ones.
+    private mutating func forgetAll() {
+        forgetWord()
+        streak = nil
+        revertible = nil
+        finished = nil
     }
 
     private mutating func forgetWord() {

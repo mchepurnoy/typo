@@ -9,6 +9,8 @@ public enum InputEvent: Equatable, Sendable {
     case reset(ResetReason)
     /// The manual-conversion hotkey: convert the last word, or revert the correction just made.
     case hotkey
+    /// Another app became active (its bundle ID, if it has one); the word is forgotten.
+    case appActivated(String?)
 }
 
 public enum BoundaryKind: Equatable, Sendable {
@@ -21,7 +23,6 @@ public enum ResetReason: Equatable, Sendable {
     case mouse
     case navigation
     case chord
-    case appSwitch
     /// Keys may have been typed that the Engine never saw (e.g. the event tap was disabled).
     case missedInput
     /// Secure input (a password field) is on: nothing is tracked until it is off.
