@@ -20,8 +20,6 @@ Setup: turn off System Settings → Keyboard → Input Sources → "Automaticall
 
 Run in each app: TextEdit, Safari (a text field), Chrome (a text field), Terminal, an Electron app (VS Code or Slack). Record failures with the app name and version.
 
-Until ticket 09 (fenced fix pipeline) lands, type at a normal pace: a key typed during a correction can land in the middle of it.
-
 | Check | TextEdit | Safari | Chrome | Terminal | Electron |
 | --- | --- | --- | --- | --- | --- |
 | `ghbdtn rfr ␣` on U.S. → `привет как `, and the menu-bar layout indicator switches to Russian after `rfr` | | | | | |
@@ -45,6 +43,20 @@ Until ticket 09 (fenced fix pipeline) lands, type at a normal pace: a key typed 
 | `ghb`, click elsewhere in the text, `dtn␣` → no correction | | | | | |
 | `ghb`, ⌘-Tab away and back, `dtn␣` → no correction | | | | | |
 | `ghb`, ←, `dtn␣` → no correction | | | | | |
+
+## Fast typing
+
+Type as fast as you can, without pausing at the spaces. Nothing may be lost, duplicated or reordered.
+
+| Check | TextEdit | Safari | Chrome | Terminal | Electron |
+| --- | --- | --- | --- | --- | --- |
+| `ghbdtn rfr ltkf ` → `привет как дела ` | | | | | |
+| `ghbdtn ,elen hf,jnfnm ` → `привет будут работать ` (letters on punctuation keys) | | | | | |
+| `ghbdtn rfr ltkf ` typed fast: the layout switches to Russian only after `ltkf` is in, and it still becomes `дела` | | | | | |
+| On Russian – PC: `сщву тпштч ршерги ` → `code nginx github ` | | | | | |
+| Hold a letter key (auto-repeat) right after a corrected word: the repeated letters come after the correction | | | | | |
+
+- [ ] Tap health: in a debug build, add `usleep(2_000_000)` to `KeyboardMonitor.keyDown` and type. The keyboard keeps working, Console (subsystem `app.typo.Typo`, category `tap`) logs "event tap timed out 3 times in a minute; pausing", and typo resumes after 60 s.
 
 ## Revert and exceptions
 

@@ -41,6 +41,9 @@ final class SystemLayouts {
     private(set) var active: ActiveLayouts
     /// The enabled input sources by ID, to select one without enumerating them again.
     private var sources: [String: TISInputSource]
+    /// For each enabled layout, the key typing each character it types with one key. Built on
+    /// first use; depends only on which layouts are enabled.
+    private var keysByCharacter: [String: [String: Key]] = [:]
 
     init() {
         (active, sources) = Self.read()
@@ -69,7 +72,33 @@ final class SystemLayouts {
     }
 
     private func refresh() {
+        let enabledBefore = active.enabled.map(\.id)
         (active, sources) = Self.read()
+        if active.enabled.map(\.id) != enabledBefore { keysByCharacter = [:] }
+    }
+
+    /// The key (and Shift) that types `character`, on the current layout if it can, else on another
+    /// enabled one, so a retyped character carries a real keycode for apps that look at keycodes.
+    func key(typing character: String) -> Key? {
+        for layout in [active.current] + active.enabled {
+            if let key = keys(of: layout)[character] { return key }
+        }
+        return nil
+    }
+
+    private func keys(of layout: any Layout) -> [String: Key] {
+        if let keys = keysByCharacter[layout.id] { return keys }
+        var keys: [String: Key] = [:]
+        for shift in [true, false] {
+            for code in KeyCode.wordKeyCodes {
+                let key = Key(code: code, shift: shift)
+                let typed = layout.character(for: key)
+                // Unshifted wins; dead keys (typing nothing) never match
+                if !typed.isEmpty { keys[typed] = key }
+            }
+        }
+        keysByCharacter[layout.id] = keys
+        return keys
     }
 
     private static func read() -> (ActiveLayouts, [String: TISInputSource]) {

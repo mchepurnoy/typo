@@ -53,4 +53,6 @@ public enum KeyCode {
     public static let keypadEnter: UInt16 = 76
     /// Letter, digit and punctuation keys of the main block; Return, Tab and Space are handled above.
     static let wordKeys: ClosedRange<UInt16> = 0...50
+    /// The keys that can be part of a word.
+    public static let wordKeyCodes: [UInt16] = wordKeys.filter { ![`return`, tab, space].contains($0) }
 }
