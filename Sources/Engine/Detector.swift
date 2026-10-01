@@ -4,6 +4,8 @@ struct Correction: Equatable {
     let replacement: String
     /// The layout the word was re-read under: the correction's direction.
     let targetLayoutID: String
+    /// The typed word without surrounding punctuation, lowercased: what an exception records.
+    let typedWord: String
 }
 
 /// Decides whether a word was typed in the wrong layout, using the language models.
@@ -48,11 +50,14 @@ struct Detector {
     ///   - recent: the most recently active layout ID per script, to pick between targets.
     ///   - previousTarget: the target layout of the previous word's correction, if it was corrected;
     ///     a short word is only corrected in that same direction.
+    ///   - exceptions: lowercased typed words never to correct.
     func correction(
-        for word: [Key], layouts: ActiveLayouts, recent: [Script: String], previousTarget: String? = nil
+        for word: [Key], layouts: ActiveLayouts, recent: [Script: String], previousTarget: String? = nil,
+        exceptions: Set<String> = []
     ) -> Correction? {
         guard let readings = readings(of: word, layouts: layouts, recent: recent),
-              !Self.isSkipped(readings.original)
+              !Self.isSkipped(readings.original),
+              !exceptions.contains(readings.typed.lowercased())
         else { return nil }
 
         let typedJudgements = readings.sourceModels.map { Judgement(of: readings.typed, in: $0, spellChecker: spellChecker) }
@@ -83,7 +88,10 @@ struct Detector {
                 accepted = margin > required && judgement.trigramScore > Self.unknownFloor
             }
             if accepted, margin > best?.margin ?? -.infinity {
-                best = (Correction(original: readings.original, replacement: target.replacement, targetLayoutID: target.layoutID), margin)
+                let correction = Correction(
+                    original: readings.original, replacement: target.replacement, targetLayoutID: target.layoutID,
+                    typedWord: readings.typed.lowercased())
+                best = (correction, margin)
             }
         }
         return best?.correction

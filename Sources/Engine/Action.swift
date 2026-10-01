@@ -8,6 +8,10 @@ public enum Action: Equatable, Sendable {
     case replayBoundary
     /// Make this layout (a macOS input source ID) the active one, for the typing that follows.
     case selectLayout(String)
+    /// Press this boundary key (a fresh key press, not the swallowed one).
+    case pressBoundary(BoundaryKind)
+    /// Persist this word as an exception: the Engine never corrects it again.
+    case recordException(String)
 }
 
 /// The Engine's answer to one event: whether the event reaches the app, and what to do next.

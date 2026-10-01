@@ -12,12 +12,15 @@ final class KeyboardMonitor {
     private static let syntheticTag: Int64 = 0x7479_706F  // "typo"
 
     private var engine: Engine
+    private let settings: SettingsStore
     private let layouts = SystemLayouts()
     private let eventSource = CGEventSource(stateID: .privateState)
     private var tap: CFMachPort?
 
-    init(languageModels: [LanguageModel], spellChecker: (any SpellChecker)?) {
-        engine = Engine(languageModels: languageModels, spellChecker: spellChecker)
+    init(languageModels: [LanguageModel], spellChecker: (any SpellChecker)?, settings: SettingsStore) {
+        engine = Engine(languageModels: languageModels, spellChecker: spellChecker, settings: settings.engineSettings)
+        self.settings = settings
+        settings.onChange = { [weak self] in self?.engine.settings = $0 }
     }
 
     /// Installs the tap. Fails until the app is trusted for Accessibility.
@@ -95,11 +98,23 @@ final class KeyboardMonitor {
                 for character in text { press(0, typing: String(character)) }
             case .replayBoundary:
                 if let copy = boundary?.copy() { post(copy) }
+            case .pressBoundary(let boundary):
+                press(Self.keyCode(boundary))
+            case .recordException(let word):
+                settings.addException(word)
             case .selectLayout(let id):
                 // Only once the retype above has been delivered: switching inside the tap callback
                 // would change the layout before the app sees the posted events
                 DispatchQueue.main.async { [layouts] in layouts.select(id) }
             }
+        }
+    }
+
+    private static func keyCode(_ boundary: BoundaryKind) -> CGKeyCode {
+        switch boundary {
+        case .space: KeyCode.space
+        case .tab: KeyCode.tab
+        case .return: KeyCode.return
         }
     }
 

@@ -46,6 +46,16 @@ Until ticket 09 (fenced fix pipeline) lands, type at a normal pace: a key typed 
 | `ghb`, ⌘-Tab away and back, `dtn␣` → no correction | | | | | |
 | `ghb`, ←, `dtn␣` → no correction | | | | | |
 
+## Revert and exceptions
+
+| Check | TextEdit | Safari | Chrome | Terminal | Electron |
+| --- | --- | --- | --- | --- | --- |
+| `ghbdtn␣` then ⌫ at once → `ghbdtn ` again; typing `ghbdtn␣` later is left alone | | | | | |
+| `ghbdtn rfr␣` (layout switches) then ⌫ → `привет rfr ` (only the last correction is reverted) and the layout is back to U.S. | | | | | |
+| `ghbdtn⏎` or `ghbdtn⇥` then ⌫ → an ordinary Backspace (no revert after Return or Tab) | | | | | |
+
+- [ ] Quit and relaunch typo: a word reverted before (`ghbdtn`) is still left alone (`defaults read app.typo.Typo exceptions` lists it)
+
 ## Password fields
 
 - [ ] In a Safari login form's password field, typing `ghbdtn␣` is not corrected

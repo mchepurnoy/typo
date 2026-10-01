@@ -7,9 +7,12 @@ public struct Engine: Sendable {
         /// Consecutive corrections in the same direction after which the layout is switched, or
         /// `nil` to never switch. Values below 1 count as 1.
         public var switchThreshold: Int?
+        /// Lowercased typed words never corrected, recorded by a revert or added by hand.
+        public var exceptions: Set<String>
 
-        public init(switchThreshold: Int? = 2) {
+        public init(switchThreshold: Int? = 2, exceptions: Set<String> = []) {
             self.switchThreshold = switchThreshold
+            self.exceptions = exceptions
         }
     }
 
@@ -25,6 +28,15 @@ public struct Engine: Sendable {
     private var recentLayouts: [Script: String] = [:]
     /// Consecutive corrections towards one target layout, ended by a word that needed none.
     private var streak: (targetLayoutID: String, count: Int)?
+    /// The correction just made, while Backspace can still revert it (next event only).
+    private var revertible: Revertible?
+
+    private struct Revertible {
+        let correction: Correction
+        let boundary: BoundaryKind
+        /// The layout that was active before this correction switched it, if it did.
+        let switchedFrom: String?
+    }
     private let detector: Detector
 
     /// - Parameters:
@@ -39,6 +51,8 @@ public struct Engine: Sendable {
         if let script = layouts.current.language?.script {
             recentLayouts[script] = layouts.current.id
         }
+        let justCorrected = revertible
+        revertible = nil
         switch event {
         case .key(let key):
             word.append(key)
@@ -47,6 +61,7 @@ public struct Engine: Sendable {
             prepareSpellCheck(layouts)
             return .pass
         case .backspace:
+            if let justCorrected { return .swallow(revert(justCorrected)) }
             if word.isEmpty {
                 // Editing text before the word, maybe the correction itself: it no longer counts
                 streak = nil
@@ -60,18 +75,40 @@ public struct Engine: Sendable {
             forgetWord()
             streak = nil
             return .pass
-        case .boundary:
+        case .boundary(let boundary):
             defer { forgetWord() }
             guard !word.isEmpty else { return .pass }
             guard let wordLayouts = trackedWordLayouts(layouts),
                   let correction = detector.correction(
-                      for: word, layouts: wordLayouts, recent: recentLayouts, previousTarget: streak?.targetLayoutID)
+                      for: word, layouts: wordLayouts, recent: recentLayouts, previousTarget: streak?.targetLayoutID,
+                      exceptions: settings.exceptions)
             else {
                 streak = nil
                 return .pass
             }
-            return .swallow(correct(correction, activeLayoutID: layouts.current.id))
+            let actions = correct(correction, activeLayoutID: layouts.current.id)
+            // Only after Space is it known what the boundary left on screen: a replayed Return may
+            // have sent a message, and Tab may have moved focus or inserted several spaces
+            if boundary == .space {
+                let switched = actions.contains(.selectLayout(correction.targetLayoutID))
+                revertible = Revertible(
+                    correction: correction, boundary: boundary, switchedFrom: switched ? layouts.current.id : nil)
+            }
+            return .swallow(actions)
         }
+    }
+
+    /// Restores the original word and boundary, undoes the layout switch, and records an exception.
+    private mutating func revert(_ revertible: Revertible) -> [Action] {
+        let correction = revertible.correction
+        streak = nil
+        settings.exceptions.insert(correction.typedWord)
+        var actions: [Action] = [
+            .erase(correction.replacement.count + 1), .type(correction.original), .pressBoundary(revertible.boundary),
+        ]
+        if let layout = revertible.switchedFrom { actions.append(.selectLayout(layout)) }
+        actions.append(.recordException(correction.typedWord))
+        return actions
     }
 
     /// The actions for a correction, switching the layout once enough of them point the same way

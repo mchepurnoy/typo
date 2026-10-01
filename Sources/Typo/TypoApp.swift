@@ -33,6 +33,7 @@ final class Status {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let status = Status()
+    let settings = SettingsStore()
     /// Created once the language models are loaded.
     private var monitor: KeyboardMonitor?
     private var permissionPoll: Timer?
@@ -48,7 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             status.missingLanguages = Language.allCases.filter { !loaded.contains($0) }.map(\.rawValue)
             let spellChecker = SystemSpellChecker()
             spellChecker.warmUp()
-            monitor = KeyboardMonitor(languageModels: models, spellChecker: spellChecker)
+            monitor = KeyboardMonitor(languageModels: models, spellChecker: spellChecker, settings: settings)
             if startMonitor() { return }
             permissionPoll = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
                 MainActor.assumeIsolated { self?.pollPermission() }
