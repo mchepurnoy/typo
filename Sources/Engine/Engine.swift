@@ -1,6 +1,7 @@
 /// The wrong-layout correction state machine: consumes input events, answers with what to do.
 ///
-/// Holds the current word as keys only, in memory, and never persists it (ADR 0003).
+/// Holds the current word (and the one just finished) as keys only, in memory, and never
+/// persists them (ADR 0003).
 public struct Engine: Sendable {
     /// What the user can change while typo runs; changes take effect with the next event.
     public struct Settings: Equatable, Sendable {
@@ -9,10 +10,13 @@ public struct Engine: Sendable {
         public var switchThreshold: Int?
         /// Lowercased typed words never corrected, recorded by a revert or added by hand.
         public var exceptions: Set<String>
+        /// Lowercased typed words always corrected, recorded by manual conversion.
+        public var learnedWords: Set<String>
 
-        public init(switchThreshold: Int? = 2, exceptions: Set<String> = []) {
+        public init(switchThreshold: Int? = 2, exceptions: Set<String> = [], learnedWords: Set<String> = []) {
             self.switchThreshold = switchThreshold
             self.exceptions = exceptions
+            self.learnedWords = learnedWords
         }
     }
 
@@ -28,16 +32,29 @@ public struct Engine: Sendable {
     private var recentLayouts: [Script: String] = [:]
     /// Consecutive corrections towards one target layout, ended by a word that needed none.
     private var streak: (targetLayoutID: String, count: Int)?
-    /// The correction just made, while Backspace can still revert it (next event only).
+    /// The conversion just made, while Backspace or the hotkey can still revert it (next event only).
     private var revertible: Revertible?
+    /// The word just finished with Space and left alone, while the hotkey can still convert it
+    /// (next event only).
+    private var finished: (keys: [Key], layout: any Layout)?
+    private let detector: Detector
 
     private struct Revertible {
         let correction: Correction
-        let boundary: BoundaryKind
-        /// The layout that was active before this correction switched it, if it did.
+        /// Whether the user asked for it with the hotkey, rather than detection. Only automatic
+        /// corrections are reverted by Backspace; the hotkey toggles either.
+        let isManual: Bool
+        /// The boundary typed after the word, if the conversion happened after one (always Space).
+        let boundary: BoundaryKind?
+        /// The layout that was active before this conversion switched it, if it did.
         let switchedFrom: String?
+        /// For a manual conversion: whether the word was learned, or an exception, before it, so
+        /// toggling back restores exactly that.
+        var wasLearned = false
+        var wasException = false
+        /// For a manual conversion of the word being typed: how it was tracked before.
+        var wordBefore: (layout: any Layout, keyScripts: [Script?])?
     }
-    private let detector: Detector
 
     /// - Parameters:
     ///   - languageModels: one per supported language; languages without one never take part.
@@ -51,8 +68,10 @@ public struct Engine: Sendable {
         if let script = layouts.current.language?.script {
             recentLayouts[script] = layouts.current.id
         }
-        let justCorrected = revertible
+        let justConverted = revertible
+        let justFinished = finished
         revertible = nil
+        finished = nil
         switch event {
         case .key(let key):
             word.append(key)
@@ -61,7 +80,7 @@ public struct Engine: Sendable {
             prepareSpellCheck(layouts)
             return .pass
         case .backspace:
-            if let justCorrected { return .swallow(revert(justCorrected)) }
+            if let justConverted, !justConverted.isManual { return .swallow(revert(justConverted)) }
             if word.isEmpty {
                 // Editing text before the word, maybe the correction itself: it no longer counts
                 streak = nil
@@ -75,15 +94,17 @@ public struct Engine: Sendable {
             forgetWord()
             streak = nil
             return .pass
+        case .hotkey:
+            // The hotkey itself (a modifier) passes; only the actions matter
+            if let justConverted { return Response(disposition: .pass, actions: revert(justConverted)) }
+            return Response(disposition: .pass, actions: convertManually(layouts, finished: justFinished))
         case .boundary(let boundary):
             defer { forgetWord() }
             guard !word.isEmpty else { return .pass }
-            guard let wordLayouts = trackedWordLayouts(layouts),
-                  let correction = detector.correction(
-                      for: word, layouts: wordLayouts, recent: recentLayouts, previousTarget: streak?.targetLayoutID,
-                      exceptions: settings.exceptions)
-            else {
+            let wordLayouts = trackedWordLayouts(layouts)
+            guard let wordLayouts, let correction = correction(wordLayouts) else {
                 streak = nil
+                if boundary == .space, let wordLayouts { finished = (word, wordLayouts.current) }
                 return .pass
             }
             let actions = correct(correction, activeLayoutID: layouts.current.id)
@@ -92,23 +113,23 @@ public struct Engine: Sendable {
             if boundary == .space {
                 let switched = actions.contains(.selectLayout(correction.targetLayoutID))
                 revertible = Revertible(
-                    correction: correction, boundary: boundary, switchedFrom: switched ? layouts.current.id : nil)
+                    correction: correction, isManual: false, boundary: boundary,
+                    switchedFrom: switched ? layouts.current.id : nil)
             }
             return .swallow(actions)
         }
     }
 
-    /// Restores the original word and boundary, undoes the layout switch, and records an exception.
-    private mutating func revert(_ revertible: Revertible) -> [Action] {
-        let correction = revertible.correction
-        streak = nil
-        settings.exceptions.insert(correction.typedWord)
-        var actions: [Action] = [
-            .erase(correction.replacement.count + 1), .type(correction.original), .pressBoundary(revertible.boundary),
-        ]
-        if let layout = revertible.switchedFrom { actions.append(.selectLayout(layout)) }
-        actions.append(.recordException(correction.typedWord))
-        return actions
+    /// A learned word is converted whatever detection says; anything else is up to the detector.
+    private func correction(_ layouts: ActiveLayouts) -> Correction? {
+        if !settings.learnedWords.isEmpty,
+           let conversion = detector.conversion(for: word, layouts: layouts, recent: recentLayouts),
+           settings.learnedWords.contains(conversion.typedWord) {
+            return conversion
+        }
+        return detector.correction(
+            for: word, layouts: layouts, recent: recentLayouts, previousTarget: streak?.targetLayoutID,
+            exceptions: settings.exceptions)
     }
 
     /// The actions for a correction, switching the layout once enough of them point the same way
@@ -120,6 +141,76 @@ public struct Engine: Sendable {
         if let threshold = settings.switchThreshold, count >= max(threshold, 1), activeLayoutID != correction.targetLayoutID {
             actions.append(.selectLayout(correction.targetLayoutID))
         }
+        return actions
+    }
+
+    /// Converts the word being typed, or else the word just finished, to the other script, switches
+    /// to that script's layout, and learns the word.
+    private mutating func convertManually(_ layouts: ActiveLayouts, finished: (keys: [Key], layout: any Layout)?) -> [Action] {
+        let correction: Correction
+        let boundary: BoundaryKind?
+        var wordBefore: (layout: any Layout, keyScripts: [Script?])?
+        if !word.isEmpty {
+            guard let wordLayouts = trackedWordLayouts(layouts),
+                  let conversion = detector.conversion(for: word, layouts: wordLayouts, recent: recentLayouts),
+                  let target = layouts.enabled.first(where: { $0.id == conversion.targetLayoutID })
+            else { return [] }
+            // The keys stay the word: on screen they now read as typed on the target layout
+            wordBefore = (wordLayouts.current, keyScripts)
+            wordLayout = target
+            keyScripts = keyScripts.map { _ in target.language?.script }
+            (correction, boundary) = (conversion, nil)
+        } else if let finished,
+                  let conversion = detector.conversion(
+                      for: finished.keys, layouts: ActiveLayouts(current: finished.layout, enabled: layouts.enabled),
+                      recent: recentLayouts) {
+            (correction, boundary) = (conversion, .space)
+        } else {
+            return []
+        }
+
+        streak = nil
+        let switched = layouts.current.id != correction.targetLayoutID
+        revertible = Revertible(
+            correction: correction, isManual: true, boundary: boundary, switchedFrom: switched ? layouts.current.id : nil,
+            wasLearned: settings.learnedWords.contains(correction.typedWord),
+            wasException: settings.exceptions.contains(correction.typedWord), wordBefore: wordBefore)
+        settings.learnedWords.insert(correction.typedWord)
+        settings.exceptions.remove(correction.typedWord)
+
+        var actions = replace(correction.original, with: correction.replacement, boundary: boundary)
+        if switched { actions.append(.selectLayout(correction.targetLayoutID)) }
+        actions.append(.recordLearnedWord(correction.typedWord))
+        return actions
+    }
+
+    /// Restores the original word and boundary and undoes the layout switch. An automatic
+    /// correction becomes an exception (and stops being learned); a manual one is undone exactly.
+    private mutating func revert(_ revertible: Revertible) -> [Action] {
+        let correction = revertible.correction
+        streak = nil
+        var actions = replace(correction.replacement, with: correction.original, boundary: revertible.boundary)
+        if let layout = revertible.switchedFrom { actions.append(.selectLayout(layout)) }
+        if let before = revertible.wordBefore {
+            wordLayout = before.layout
+            keyScripts = before.keyScripts
+        }
+        let word = correction.typedWord
+        let keepLearned = revertible.isManual && revertible.wasLearned
+        if !keepLearned, settings.learnedWords.remove(word) != nil {
+            actions.append(.forgetLearnedWord(word))
+        }
+        if !revertible.isManual || revertible.wasException {
+            settings.exceptions.insert(word)
+            actions.append(.recordException(word))
+        }
+        return actions
+    }
+
+    /// Erases `old` (and the boundary after it), types `new`, and presses the boundary again.
+    private func replace(_ old: String, with new: String, boundary: BoundaryKind?) -> [Action] {
+        var actions: [Action] = [.erase(old.count + (boundary == nil ? 0 : 1)), .type(new)]
+        if let boundary { actions.append(.pressBoundary(boundary)) }
         return actions
     }
 

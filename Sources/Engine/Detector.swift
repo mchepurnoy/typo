@@ -97,6 +97,18 @@ struct Detector {
         return best?.correction
     }
 
+    /// The word re-read under the other script's layout, whatever detection would say: for manual
+    /// conversion and learned words. `nil` only when the word cannot be re-read (a dead key, no
+    /// supported layout of another script).
+    func conversion(for word: [Key], layouts: ActiveLayouts, recent: [Script: String]) -> Correction? {
+        guard let readings = readings(of: word, layouts: layouts, recent: recent),
+              let target = readings.targets.first
+        else { return nil }
+        return Correction(
+            original: readings.original, replacement: target.replacement, targetLayoutID: target.layoutID,
+            typedWord: readings.typed.lowercased())
+    }
+
     /// Hands the readings of the word typed so far to the spell checker to prepare.
     func prepareSpellCheck(for word: [Key], layouts: ActiveLayouts, recent: [Script: String]) {
         guard let spellChecker, let readings = readings(of: word, layouts: layouts, recent: recent) else { return }
@@ -174,16 +186,19 @@ struct Detector {
         var plausibility: Double { trigramScore + Detector.lexiconWeight * (frequency ?? 0) }
     }
 
-    /// One layout per other script: the most recently used one, else the first enabled.
+    /// One layout per other script: the most recently used one, else the first enabled. Scripts
+    /// come in the order their first layout is enabled, so the choice is stable.
     private func targets(excluding script: Script, layouts: ActiveLayouts, recent: [Script: String]) -> [any Layout] {
-        var chosen: [Script: any Layout] = [:]
+        var chosen: [(script: Script, layout: any Layout)] = []
         for layout in layouts.enabled {
             guard let language = layout.language, language.script != script, models[language] != nil else { continue }
-            if chosen[language.script] == nil || layout.id == recent[language.script] {
-                chosen[language.script] = layout
+            if let index = chosen.firstIndex(where: { $0.script == language.script }) {
+                if layout.id == recent[language.script] { chosen[index].layout = layout }
+            } else {
+                chosen.append((language.script, layout))
             }
         }
-        return Array(chosen.values)
+        return chosen.map(\.layout)
     }
 
     /// The per-key characters joined, without the punctuation keys at either end: "it." is judged

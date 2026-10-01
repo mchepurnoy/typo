@@ -41,7 +41,7 @@ A correction the user forces with a hotkey on the last word, regardless of what 
 _Avoid_: force switch
 
 **Revert**:
-Undoing a correction by pressing Backspace or the manual-conversion hotkey immediately after it; restores the original word and records an exception.
+Undoing a correction by pressing Backspace or the manual-conversion hotkey immediately after it; restores the original word and records an exception. Pressing the hotkey again right after a manual conversion undoes it exactly instead, recording nothing.
 _Avoid_: undo, rollback
 
 **Exception**:

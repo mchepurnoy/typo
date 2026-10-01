@@ -12,6 +12,10 @@ public enum Action: Equatable, Sendable {
     case pressBoundary(BoundaryKind)
     /// Persist this word as an exception: the Engine never corrects it again.
     case recordException(String)
+    /// Persist this word as learned: the Engine always corrects it from now on.
+    case recordLearnedWord(String)
+    /// Remove this word from the learned words.
+    case forgetLearnedWord(String)
 }
 
 /// The Engine's answer to one event: whether the event reaches the app, and what to do next.
@@ -23,6 +27,11 @@ public struct Response: Equatable, Sendable {
 
     public var disposition: Disposition
     public var actions: [Action]
+
+    public init(disposition: Disposition, actions: [Action]) {
+        self.disposition = disposition
+        self.actions = actions
+    }
 
     public static let pass = Response(disposition: .pass, actions: [])
 

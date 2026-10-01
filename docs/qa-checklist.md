@@ -56,6 +56,19 @@ Until ticket 09 (fenced fix pipeline) lands, type at a normal pace: a key typed 
 
 - [ ] Quit and relaunch typo: a word reverted before (`ghbdtn`) is still left alone (`defaults read app.typo.Typo exceptions` lists it)
 
+## Manual conversion and learned words
+
+| Check | TextEdit | Safari | Chrome | Terminal | Electron |
+| --- | --- | --- | --- | --- | --- |
+| `b␣` then double-tap Shift → `и ` and the layout switches to Russian | | | | | |
+| Mid-word: `ghbd` then double-tap Shift → `прив`, keep typing `tn` on Russian → `привет` | | | | | |
+| Double-tap Shift twice after `b␣` → back to `b ` and the layout back to U.S. | | | | | |
+| `ghbdtn␣` (auto-corrected) then double-tap Shift → `ghbdtn ` (revert) | | | | | |
+| After converting `b` by hand, typing `b␣` again later → `и ` | | | | | |
+| Typing capitals (`Hello World`, Shift held while typing) never triggers a conversion | | | | | |
+
+- [ ] Quit and relaunch: a learned word is still corrected (`defaults read app.typo.Typo learnedWords`)
+
 ## Password fields
 
 - [ ] In a Safari login form's password field, typing `ghbdtn␣` is not corrected

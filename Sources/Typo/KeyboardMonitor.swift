@@ -16,6 +16,7 @@ final class KeyboardMonitor {
     private let layouts = SystemLayouts()
     private let eventSource = CGEventSource(stateID: .privateState)
     private var tap: CFMachPort?
+    private var doubleTap = DoubleTapDetector()
 
     init(languageModels: [LanguageModel], spellChecker: (any SpellChecker)?, settings: SettingsStore) {
         engine = Engine(languageModels: languageModels, spellChecker: spellChecker, settings: settings.engineSettings)
@@ -26,7 +27,7 @@ final class KeyboardMonitor {
     /// Installs the tap. Fails until the app is trusted for Accessibility.
     func start() -> Bool {
         guard tap == nil else { return true }
-        let mask: CGEventMask = [CGEventType.keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown]
+        let mask: CGEventMask = [CGEventType.keyDown, .flagsChanged, .leftMouseDown, .rightMouseDown, .otherMouseDown]
             .reduce(0) { $0 | (1 << $1.rawValue) }
         guard let tap = CGEvent.tapCreate(
             tap: .cgSessionEventTap, place: .headInsertEventTap, options: .defaultTap,
@@ -62,13 +63,19 @@ final class KeyboardMonitor {
         case _ where event.getIntegerValueField(.eventSourceUserData) == Self.syntheticTag:
             return true
         case .leftMouseDown, .rightMouseDown, .otherMouseDown:
+            doubleTap.otherInput()
             send(.reset(.mouse))
+            return true
+        case .flagsChanged:
+            handleModifier(event)
             return true
         case .keyDown where IsSecureEventInputEnabled():
             // A password field: track nothing (normally the tap does not even see these keys)
+            doubleTap.otherInput()
             send(.reset(.secureInput))
             return true
         case .keyDown:
+            doubleTap.otherInput()
             layouts.syncCurrent()
             let flags = event.flags
             let input = InputEvent.keyDown(
@@ -81,6 +88,33 @@ final class KeyboardMonitor {
             return response.disposition == .pass
         default:
             return true
+        }
+    }
+
+    /// Feeds the hotkey modifier's presses and releases to the double-tap detector; any other
+    /// modifier interrupts it.
+    private func handleModifier(_ event: CGEvent) {
+        let code = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
+        let (codes, mask) = Self.modifier(settings.hotkey)
+        // In a password field the tap sees Shift but not the letters it capitalises
+        guard codes.contains(code), !IsSecureEventInputEnabled() else {
+            doubleTap.otherInput()
+            return
+        }
+        // CGEvent timestamps are not nanoseconds everywhere; the detector needs nanoseconds
+        if doubleTap.modifier(isDown: event.flags.contains(mask), at: DispatchTime.now().uptimeNanoseconds) {
+            layouts.syncCurrent()
+            send(.hotkey)
+        }
+    }
+
+    /// Left and right keycodes and the flag of each hotkey modifier.
+    private static func modifier(_ hotkey: SettingsStore.Hotkey) -> (Set<UInt16>, CGEventFlags) {
+        switch hotkey {
+        case .shift: ([56, 60], .maskShift)
+        case .option: ([58, 61], .maskAlternate)
+        case .control: ([59, 62], .maskControl)
+        case .command: ([55, 54], .maskCommand)
         }
     }
 
@@ -102,6 +136,10 @@ final class KeyboardMonitor {
                 press(Self.keyCode(boundary))
             case .recordException(let word):
                 settings.addException(word)
+            case .recordLearnedWord(let word):
+                settings.learn(word)
+            case .forgetLearnedWord(let word):
+                settings.forgetLearnedWord(word)
             case .selectLayout(let id):
                 // Only once the retype above has been delivered: switching inside the tap callback
                 // would change the layout before the app sees the posted events

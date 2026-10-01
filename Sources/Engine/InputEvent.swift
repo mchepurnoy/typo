@@ -7,6 +7,8 @@ public enum InputEvent: Equatable, Sendable {
     case backspace
     /// Something that moves away from the current word, which is then forgotten.
     case reset(ResetReason)
+    /// The manual-conversion hotkey: convert the last word, or revert the correction just made.
+    case hotkey
 }
 
 public enum BoundaryKind: Equatable, Sendable {
