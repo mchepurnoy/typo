@@ -14,6 +14,6 @@ rm -rf build/package "$ZIP"
 mkdir -p "$STAGE"
 cp -R build/Typo.app "$STAGE/"
 cp docs/testing-build.txt "$STAGE/README.txt"
-# ditto keeps the bundle's signature and extended attributes intact
-ditto -c -k --keepParent "$STAGE" "$ZIP"
+# Without local extended attributes, which would otherwise ride along as ._ files
+ditto -c -k --norsrc --noextattr --noqtn --keepParent "$STAGE" "$ZIP"
 echo "Packed $ZIP ($(du -h "$ZIP" | cut -f1)) — $(lipo -archs build/Typo.app/Contents/MacOS/Typo)"
