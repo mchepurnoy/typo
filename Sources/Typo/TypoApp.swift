@@ -1,5 +1,4 @@
 import AppKit
-import ApplicationServices
 import Engine
 import OSLog
 import SwiftUI
@@ -10,15 +9,34 @@ struct TypoApp: App {
 
     var body: some Scene {
         MenuBarExtra("Typo", systemImage: "keyboard") {
-            if !delegate.status.missingLanguages.isEmpty {
-                Text("Language data missing: \(delegate.status.missingLanguages.joined(separator: ", ")). Reinstall Typo.")
-            }
-            if !delegate.status.isRunning {
-                Text("Waiting for Accessibility permission…")
-            }
-            Button("Quit Typo") { NSApp.terminate(nil) }
-                .keyboardShortcut("q")
+            MenuContent(delegate: delegate)
         }
+    }
+}
+
+private struct MenuContent: View {
+    let delegate: AppDelegate
+
+    var body: some View {
+        let status = delegate.status
+        if !status.missingLanguages.isEmpty {
+            Text("Language data missing: \(status.missingLanguages.joined(separator: ", ")). Reinstall Typo.")
+        }
+        if let problem = status.problem {
+            Text(problem)
+        }
+        if status.problem != nil || !delegate.permissions.allGranted {
+            Button("Set Up Permissions…") { delegate.showOnboarding() }
+            Divider()
+        }
+        let login = delegate.launchAtLogin
+        Toggle("Launch at Login", isOn: Binding(get: { login.isEnabled }, set: { login.setEnabled($0) }))
+        if login.needsApproval {
+            Text("Allow Typo in System Settings → Login Items")
+        }
+        Divider()
+        Button("Quit Typo") { NSApp.terminate(nil) }
+            .keyboardShortcut("q")
     }
 }
 
@@ -26,22 +44,40 @@ struct TypoApp: App {
 @Observable
 final class Status {
     var isRunning = false
+    /// Why typo is not working, if it is not.
+    var problem: String?
     /// Codes of supported languages whose model could not be loaded; they take no part in corrections.
     var missingLanguages: [String] = []
 }
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    private static let onboardedKey = "onboardingShown"
+
     let status = Status()
     let settings = SettingsStore()
+    let permissions = Permissions()
+    let launchAtLogin = LaunchAtLogin()
+    private lazy var onboarding = OnboardingWindow(permissions: permissions)
     /// Created once the language models are loaded.
     private var monitor: KeyboardMonitor?
-    private var permissionPoll: Timer?
+    /// Accessibility was granted while typo ran.
+    private var wasTrusted = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)  // Info.plist sets LSUIElement too; this covers `swift run`
-        // "AXTrustedCheckOptionPrompt" is kAXTrustedCheckOptionPrompt, a global Swift 6 won't let us read.
-        _ = AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": true] as CFDictionary)
+        launchAtLogin.enableOnFirstLaunch()
+        permissions.onTick = { [weak self] in
+            self?.syncWithPermissions()
+            self?.launchAtLogin.refresh()
+        }
+        permissions.startPolling()
+        let defaults = UserDefaults.standard
+        if !permissions.accessibility || !defaults.bool(forKey: Self.onboardedKey) {
+            defaults.set(true, forKey: Self.onboardedKey)
+            onboarding.show()
+        }
+
         Task {
             // Parsing ~4 MB of model text stays off the main thread
             let models = await Task.detached(priority: .userInitiated) { Self.loadLanguageModels() }.value
@@ -50,17 +86,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let spellChecker = SystemSpellChecker()
             spellChecker.warmUp()
             monitor = KeyboardMonitor(languageModels: models, spellChecker: spellChecker, settings: settings)
-            if startMonitor() { return }
-            permissionPoll = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-                MainActor.assumeIsolated { self?.pollPermission() }
-            }
+            syncWithPermissions()
         }
     }
 
-    private func pollPermission() {
-        guard AXIsProcessTrusted(), startMonitor() else { return }
-        permissionPoll?.invalidate()
-        permissionPoll = nil
+    func showOnboarding() {
+        onboarding.show()
+    }
+
+    /// Runs the tap exactly while Accessibility is granted: starts it as soon as it is (no relaunch),
+    /// stops it if it is revoked, and restarts it when it is granted back, even within one check.
+    private func syncWithPermissions() {
+        guard let monitor else { return }
+        if permissions.accessibility {
+            if monitor.isStalled { monitor.stop() }
+            let started = monitor.isRunning || monitor.start()
+            if started { wasTrusted = true }
+            status.problem = started
+                ? (permissions.inputMonitoring ? nil : "Input Monitoring is off: Typo may not see what you type.")
+                : "Typo cannot watch the keyboard. Remove Typo from Privacy & Security → Accessibility and add it again."
+        } else {
+            if monitor.isRunning { monitor.stop() }
+            status.problem = wasTrusted ? "Accessibility permission was turned off." : "Waiting for Accessibility permission…"
+        }
+        status.isRunning = monitor.isRunning
     }
 
     /// The bundled language models (Contents/Resources/<code>.lm). Missing or mislabelled ones are
@@ -80,10 +129,5 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 return nil
             }
         }
-    }
-
-    private func startMonitor() -> Bool {
-        status.isRunning = monitor?.start() ?? false
-        return status.isRunning
     }
 }

@@ -36,6 +36,7 @@ final class KeyboardMonitor {
     private let eventSource = CGEventSource(stateID: .privateState)
     private let log = Logger(subsystem: "app.typo.Typo", category: "tap")
     private var tap: CFMachPort?
+    private var tapSource: CFRunLoopSource?
     private var doubleTap = DoubleTapDetector()
 
     private var fenceSequence: UInt32 = 0
@@ -47,12 +48,29 @@ final class KeyboardMonitor {
     /// A layout switch requested by a fix, made once the pipeline is idle.
     private var pendingLayout: String?
     private var recentTimeouts: [UInt64] = []
+    private var isBackingOff = false
 
     init(languageModels: [LanguageModel], spellChecker: (any SpellChecker)?, settings: SettingsStore) {
         engine = Engine(languageModels: languageModels, spellChecker: spellChecker, settings: settings.engineSettings)
         self.settings = settings
         settings.onChange = { [weak self] in self?.engine.settings = $0 }
+
+        // The tap sees no keys while secure input is on, so check for it rather than wait for one
+        let secureInputCheck = Timer(timeInterval: 0.5, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated {
+                if self?.isRunning == true, IsSecureEventInputEnabled() { self?.send(.reset(.secureInput)) }
+            }
+        }
+        RunLoop.main.add(secureInputCheck, forMode: .common)
+
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.send(.reset(.appSwitch)) }
+        }
     }
+
+    var isRunning: Bool { tap != nil }
 
     /// Installs the tap. Fails until the app is trusted for Accessibility.
     func start() -> Bool {
@@ -64,23 +82,38 @@ final class KeyboardMonitor {
             eventsOfInterest: mask, callback: tapCallback,
             userInfo: Unmanaged.passUnretained(self).toOpaque())
         else { return false }
-        self.tap = tap
-        CFRunLoopAddSource(CFRunLoopGetMain(), CFMachPortCreateRunLoopSource(nil, tap, 0), .commonModes)
+        let source = CFMachPortCreateRunLoopSource(nil, tap, 0)
+        CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
         CGEvent.tapEnable(tap: tap, enable: true)
-
-        // The tap sees no keys while secure input is on, so check for it rather than wait for one
-        Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated {
-                if IsSecureEventInputEnabled() { self?.send(.reset(.secureInput)) }
-            }
-        }
-
-        NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.send(.reset(.appSwitch)) }
-        }
+        self.tap = tap
+        tapSource = source
+        // Whatever was typed while the tap was off is unknown
+        send(.reset(.missedInput))
         return true
+    }
+
+    /// Whether the tap is installed but the system has disabled it (outside a back-off rest),
+    /// e.g. after Accessibility was revoked and granted back between two checks.
+    var isStalled: Bool {
+        guard let tap else { return false }
+        return !CGEvent.tapIsEnabled(tap: tap) && !isBackingOff
+    }
+
+    /// Removes the tap, e.g. when Accessibility is revoked. Held keys are dropped: without the
+    /// permission they could not be posted anyway.
+    func stop() {
+        guard let tap else { return }
+        fenceTimer?.invalidate()
+        fenceTimer = nil
+        awaitedFence = nil
+        deferred.removeAll()
+        pendingLayout = nil
+        CGEvent.tapEnable(tap: tap, enable: false)
+        if let tapSource { CFRunLoopRemoveSource(CFRunLoopGetMain(), tapSource, .commonModes) }
+        CFMachPortInvalidate(tap)
+        self.tap = nil
+        tapSource = nil
+        send(.reset(.missedInput))
     }
 
     // MARK: Tap
@@ -147,8 +180,11 @@ final class KeyboardMonitor {
             if recentTimeouts.count >= Self.timeoutLimit {
                 recentTimeouts.removeAll()
                 log.error("event tap timed out \(Self.timeoutLimit) times in a minute; pausing for \(Self.backOff) s")
+                isBackingOff = true
                 schedule(after: Self.backOff) { [weak self] in
-                    guard let self, let tap = self.tap else { return }
+                    guard let self else { return }
+                    self.isBackingOff = false
+                    guard let tap = self.tap else { return }
                     // Keys typed during the pause were never seen
                     self.send(.reset(.missedInput))
                     CGEvent.tapEnable(tap: tap, enable: true)
