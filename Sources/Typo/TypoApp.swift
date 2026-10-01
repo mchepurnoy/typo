@@ -53,6 +53,7 @@ private struct MenuContent: View {
             openSettings()
         }
         .keyboardShortcut(",")
+        Button("About Typo") { delegate.showAbout() }
         Divider()
         Button("Quit Typo") { NSApp.terminate(nil) }
             .keyboardShortcut("q")
@@ -127,6 +128,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func showOnboarding() {
         onboarding.show()
+    }
+
+    /// The standard About panel, with the attribution the CC BY language data requires.
+    func showAbout() {
+        let credits = """
+            Free software under the GNU GPL v3 (GPL-3.0-only).
+
+            Language data derived from the Leipzig Corpora Collection (eng_news_2024_1M, rus_news_2024_1M, \
+            deu_news_2024_1M, spa_news_2024_1M), Universität Leipzig, wortschatz.uni-leipzig.de, licensed under \
+            CC BY. Changes: lowercased, ё folded to е, reduced to trigram statistics and a frequency list.
+            """
+        let style = NSMutableParagraphStyle()
+        style.alignment = .center
+        NSApp.activate()
+        NSApp.orderFrontStandardAboutPanel(options: [
+            .credits: NSAttributedString(string: credits, attributes: [
+                .font: NSFont.systemFont(ofSize: NSFont.smallSystemFontSize), .paragraphStyle: style,
+                .foregroundColor: NSColor.secondaryLabelColor,
+            ]),
+        ])
     }
 
     private func correctionFeedback() {

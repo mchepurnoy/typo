@@ -24,6 +24,18 @@ The default build is ad-hoc signed, whose signature changes on every build, so t
 CODESIGN_ID="Apple Development: you@example.com (TEAMID)" scripts/build-app.sh
 ```
 
+## Send a test build to someone
+
+```sh
+scripts/package-for-testing.sh   # build/Typo-<version>-test.zip: Apple silicon + Intel, with README.txt
+```
+
+The build is ad-hoc signed and not notarized (that needs a paid Developer ID, ticket 15), so on the other Mac it has to be allowed once in System Settings → Privacy & Security → "Open Anyway"; `README.txt` in the zip explains it, in Russian and English.
+
+## App icon
+
+`Support/AppIcon.svg` is the source; `scripts/build-icon.sh` renders `Support/AppIcon.icns` from it with the system SVG renderer. Re-run it after editing the SVG.
+
 ## Test
 
 ```sh

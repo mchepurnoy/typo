@@ -1,0 +1,37 @@
+Typo — тестовая сборка / test build
+===================================
+
+Typo исправляет слова, набранные не в той раскладке: ghbdtn → привет, руддщ → hello.
+Нужна macOS 14 или новее.
+
+УСТАНОВКА
+1. Перетащите Typo.app в папку «Программы» (Applications).
+2. Сборка не нотаризована Apple, поэтому при первом запуске macOS её заблокирует.
+   Откройте Системные настройки → Конфиденциальность и безопасность, внизу нажмите
+   «Всё равно открыть» (Open Anyway) напротив Typo и подтвердите.
+   Или в Терминале:  xattr -dr com.apple.quarantine /Applications/Typo.app
+3. Typo откроет окно «Set Up Typo». Разрешите «Универсальный доступ» (Accessibility)
+   и «Мониторинг ввода» (Input Monitoring). Перезапускать не нужно.
+4. В строке меню появится значок клавиатуры. Там же Пауза, Настройки и Выход.
+
+КАК ПОЛЬЗОВАТЬСЯ
+- Включите раскладки U.S. и Russian – PC (или «Русская»).
+- Наберите слово не в той раскладке и нажмите пробел: оно исправится.
+- Backspace сразу после исправления отменяет его (слово больше не будет исправляться).
+- Двойное нажатие Shift переводит последнее слово в другую раскладку вручную.
+
+ПРИВАТНОСТЬ
+Typo видит нажатия клавиш, но ничего не сохраняет и никуда не отправляет:
+только текущее слово в памяти. На диске хранятся лишь настройки, исключения
+и выученные слова.
+
+Нашли проблему? Напишите, в каком приложении, что набирали и что получилось.
+
+---
+
+INSTALL (English)
+1. Drag Typo.app to Applications.
+2. The build is not notarized: on first launch open System Settings → Privacy & Security
+   and click "Open Anyway" next to Typo (or run: xattr -dr com.apple.quarantine /Applications/Typo.app).
+3. In the "Set Up Typo" window allow Accessibility and Input Monitoring. No relaunch needed.
+4. A keyboard icon appears in the menu bar (Pause, Settings, Quit).

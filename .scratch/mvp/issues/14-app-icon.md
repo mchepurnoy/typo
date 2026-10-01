@@ -6,7 +6,11 @@
 
 **Status:** ready-for-agent
 
-- [ ] SVG source committed; asset catalog generated from it by a script
+- [x] SVG source committed; asset catalog generated from it by a script
 - [ ] Icon looks right in Finder, Dock-less About panel, and both menu-bar appearances
 
 Spec: `.scratch/mvp/spec.md`. Glossary: `CONTEXT.md`.
+
+## Comments
+
+2026-10-01 — App icon: `Support/AppIcon.svg`, a keycap labelled like a bilingual keyboard (Latin Z, Cyrillic Я, which share a key) on an indigo macOS-grid squircle. `scripts/build-icon.sh` renders all ten iconset sizes with the system SVG renderer (`scripts/render-svg.swift`, no extra tools) and builds `Support/AppIcon.icns` with `iconutil`. `build-app.sh` bundles it (`CFBundleIconFile`). Deviation: an `.icns` rather than an asset catalog, since the app is built with SwiftPM, not an Xcode project. Menu-bar icon: kept as the SF Symbols `keyboard` and `keyboard.fill` (the correction flash), plus `pause.circle` when paused. They are template images that adapt to light and dark menu bars. A custom template glyph can replace them later. Added an About Typo menu item that shows the icon, the license and the Leipzig CC BY attribution. Left for a human: checking the icon in Finder, the About panel, and both menu-bar appearances.

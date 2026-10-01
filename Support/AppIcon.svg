@@ -1,0 +1,26 @@
+<!-- Typo's app icon: a keycap labelled like a bilingual keyboard, Latin Z and Cyrillic Я, which share a key.
+     Source of truth; scripts/build-icon.sh renders Support/AppIcon.icns from it. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6D7CFF"/>
+      <stop offset="1" stop-color="#3A2FC8"/>
+    </linearGradient>
+    <linearGradient id="keycap" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#E9EBF5"/>
+    </linearGradient>
+  </defs>
+  <!-- macOS icon grid: 824 × 824 rounded square inside the 1024 canvas -->
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#background)"/>
+  <!-- keycap: side, then top -->
+  <rect x="242" y="250" width="540" height="540" rx="104" fill="#1E1A6E" opacity="0.35"/>
+  <rect x="242" y="226" width="540" height="540" rx="104" fill="#C9CCE0"/>
+  <rect x="262" y="236" width="500" height="496" rx="88" fill="url(#keycap)"/>
+  <!-- labels; a same-colour stroke gives the weight, which the system SVG renderer may not take
+       from the font -->
+  <text x="318" y="410" font-family="Helvetica Neue" font-size="150" fill="#9AA0BC"
+        stroke="#9AA0BC" stroke-width="6" stroke-linejoin="round">Z</text>
+  <text x="690" y="684" text-anchor="end" font-family="Helvetica Neue" font-size="320" fill="#3A2FC8"
+        stroke="#3A2FC8" stroke-width="22" stroke-linejoin="round">Я</text>
+</svg>
