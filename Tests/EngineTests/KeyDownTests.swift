@@ -42,6 +42,8 @@ struct LanguageTests {
         #expect(Language(languageCode: "en") == .english)
         #expect(Language(languageCode: "en-US") == .english)
         #expect(Language(languageCode: "ru") == .russian)
+        #expect(Language(languageCode: "de") == .german)
+        #expect(Language(languageCode: "es-419") == .spanish)
         #expect(Language(languageCode: "uk") == nil)
         #expect(Language(languageCode: "ja_JP") == nil)
     }

@@ -27,10 +27,21 @@ CODESIGN_ID="Apple Development: you@example.com (TEAMID)" scripts/build-app.sh
 ## Test
 
 ```sh
-swift test
+swift test                 # all tests
+swift test -c release      # also runs the timing tests, which are skipped in debug builds
 ```
 
 The `Engine` module (pure Swift, no AppKit/Carbon) holds all correction logic and is covered by scenario tests. The macOS adapter and app shell (`Sources/Typo`) are checked by hand with [`docs/qa-checklist.md`](docs/qa-checklist.md).
+
+## Language models
+
+Detection uses one language model per supported language (English, Russian, German, Spanish) in `LanguageModels/`, built from the Leipzig Corpora Collection (CC BY). To rebuild them (downloads ≈1 GB once):
+
+```sh
+scripts/build-language-models.py
+```
+
+Sources, licence, attribution and the file format are in [`LanguageModels/SOURCES.md`](LanguageModels/SOURCES.md).
 
 ## Privacy
 

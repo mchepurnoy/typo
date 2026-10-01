@@ -14,9 +14,13 @@ struct Detector {
     let lexicons: [Language: Set<String>]
 
     func correction(for word: [Key], layouts: ActiveLayouts) -> Correction? {
-        guard word.count > Self.shortWordLength, let language = layouts.current.language else { return nil }
+        guard word.count > Self.shortWordLength, let language = layouts.current.language, lexicons[language] != nil else {
+            return nil
+        }
         let original = layouts.current.read(word)
-        let supported = layouts.enabled.compactMap { layout in layout.language.map { (layout, $0) } }
+        let supported = layouts.enabled.compactMap { layout in
+            layout.language.flatMap { lexicons[$0] != nil ? (layout, $0) : nil }
+        }
         if supported.contains(where: { isWord(original, in: $0.1) }) { return nil }
 
         for (target, targetLanguage) in supported where targetLanguage.script != language.script {

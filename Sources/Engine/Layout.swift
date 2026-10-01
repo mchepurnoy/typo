@@ -5,13 +5,15 @@ public enum Script: Sendable {
 }
 
 /// A language typo can judge words in.
-public enum Language: Sendable {
-    case english
-    case russian
+public enum Language: String, Sendable, CaseIterable {
+    case english = "en"
+    case russian = "ru"
+    case german = "de"
+    case spanish = "es"
 
     public var script: Script {
         switch self {
-        case .english: .latin
+        case .english, .german, .spanish: .latin
         case .russian: .cyrillic
         }
     }
@@ -47,10 +49,7 @@ public struct ActiveLayouts: Sendable {
 extension Language {
     /// The supported language for a BCP 47 code such as `en` or `ru-RU`, as macOS reports for a layout.
     public init?(languageCode: String) {
-        switch languageCode.split(separator: "-").first?.split(separator: "_").first {
-        case "en": self = .english
-        case "ru": self = .russian
-        default: return nil
-        }
+        guard let code = languageCode.split(separator: "-").first?.split(separator: "_").first else { return nil }
+        self.init(rawValue: String(code))
     }
 }
