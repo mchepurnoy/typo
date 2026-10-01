@@ -13,16 +13,31 @@ struct FixtureLayout: Layout {
 
     /// The keys that type `text` on this layout.
     func keys(typing text: String) -> [Key] {
-        text.map { character in
+        guard let keys = keysIfTypable(text) else { fatalError("\(id) cannot type \(text)") }
+        return keys
+    }
+
+    /// The keys that type `text` with one key press per character, or `nil` when some character
+    /// needs a dead key (e.g. `á` on Spanish) or is not on this layout.
+    func keysIfTypable(_ text: String) -> [Key]? {
+        var keys: [Key] = []
+        for character in text {
             let s = String(character)
-            if let code = plain.first(where: { $0.value == s })?.key { return Key(code: code, shift: false) }
-            if let code = shifted.first(where: { $0.value == s })?.key { return Key(code: code, shift: true) }
-            fatalError("\(id) cannot type \(s)")
+            if let code = plain.first(where: { $0.value == s })?.key {
+                keys.append(Key(code: code, shift: false))
+            } else if let code = shifted.first(where: { $0.value == s })?.key {
+                keys.append(Key(code: code, shift: true))
+            } else {
+                return nil
+            }
         }
+        return keys
     }
 
     static let us = FixtureLayout(id: "com.apple.keylayout.US", language: .english, plain: usPlain, shifted: usShifted)
     static let russianPC = FixtureLayout(id: "com.apple.keylayout.RussianWin", language: .russian, plain: russianPCPlain, shifted: russianPCShifted)
+    static let german = FixtureLayout(id: "com.apple.keylayout.German", language: .german, plain: germanPlain, shifted: germanShifted)
+    static let spanish = FixtureLayout(id: "com.apple.keylayout.Spanish", language: .spanish, plain: spanishPlain, shifted: spanishShifted)
     /// A layout typo has no language model for (e.g. Greek); same keys as U.S. so it can be typed on.
     static let unsupported = FixtureLayout(id: "com.apple.keylayout.Greek", language: nil, plain: usPlain, shifted: usShifted)
 }
@@ -61,5 +76,39 @@ extension FixtureLayout {
         24: "+", 25: "(", 26: "?", 27: "_", 28: "*", 29: ")", 30: "Ъ", 31: "Щ",
         32: "Г", 33: "Х", 34: "Ш", 35: "З", 37: "Д", 38: "О", 39: "Э", 40: "Л",
         41: "Ж", 42: "/", 43: "Б", 44: ",", 45: "Т", 46: "Ь", 47: "Ю", 50: "[",
+    ]
+    // com.apple.keylayout.German
+    static let germanPlain: [UInt16: String] = [
+        0: "a", 1: "s", 2: "d", 3: "f", 4: "h", 5: "g", 6: "y", 7: "x",
+        8: "c", 9: "v", 10: "", 11: "b", 12: "q", 13: "w", 14: "e", 15: "r",
+        16: "z", 17: "t", 18: "1", 19: "2", 20: "3", 21: "4", 22: "6", 23: "5",
+        24: "", 25: "9", 26: "7", 27: "ß", 28: "8", 29: "0", 30: "+", 31: "o",
+        32: "u", 33: "ü", 34: "i", 35: "p", 37: "l", 38: "j", 39: "ä", 40: "k",
+        41: "ö", 42: "#", 43: ",", 44: "-", 45: "n", 46: "m", 47: ".", 50: "<",
+    ]
+    static let germanShifted: [UInt16: String] = [
+        0: "A", 1: "S", 2: "D", 3: "F", 4: "H", 5: "G", 6: "Y", 7: "X",
+        8: "C", 9: "V", 10: "°", 11: "B", 12: "Q", 13: "W", 14: "E", 15: "R",
+        16: "Z", 17: "T", 18: "!", 19: "\"", 20: "§", 21: "$", 22: "&", 23: "%",
+        24: "", 25: ")", 26: "/", 27: "?", 28: "(", 29: "=", 30: "*", 31: "O",
+        32: "U", 33: "Ü", 34: "I", 35: "P", 37: "L", 38: "J", 39: "Ä", 40: "K",
+        41: "Ö", 42: "\'", 43: ";", 44: "_", 45: "N", 46: "M", 47: ":", 50: ">",
+    ]
+    // com.apple.keylayout.Spanish
+    static let spanishPlain: [UInt16: String] = [
+        0: "a", 1: "s", 2: "d", 3: "f", 4: "h", 5: "g", 6: "z", 7: "x",
+        8: "c", 9: "v", 10: "[", 11: "b", 12: "q", 13: "w", 14: "e", 15: "r",
+        16: "y", 17: "t", 18: "1", 19: "2", 20: "3", 21: "4", 22: "6", 23: "5",
+        24: "=", 25: "9", 26: "7", 27: "-", 28: "8", 29: "0", 30: "", 31: "o",
+        32: "u", 33: "", 34: "i", 35: "p", 37: "l", 38: "j", 39: ";", 40: "k",
+        41: "ñ", 42: "\'", 43: ",", 44: "ç", 45: "n", 46: "m", 47: ".", 50: "<",
+    ]
+    static let spanishShifted: [UInt16: String] = [
+        0: "A", 1: "S", 2: "D", 3: "F", 4: "H", 5: "G", 6: "Z", 7: "X",
+        8: "C", 9: "V", 10: "]", 11: "B", 12: "Q", 13: "W", 14: "E", 15: "R",
+        16: "Y", 17: "T", 18: "¡", 19: "!", 20: "#", 21: "$", 22: "/", 23: "%",
+        24: "+", 25: "(", 26: "&", 27: "_", 28: "*", 29: ")", 30: "", 31: "O",
+        32: "U", 33: "º", 34: "I", 35: "P", 37: "L", 38: "J", 39: ":", 40: "K",
+        41: "Ñ", 42: "\"", 43: "¿", 44: "Ç", 45: "N", 46: "M", 47: "?", 50: ">",
     ]
 }

@@ -6,7 +6,7 @@ private let russianPC = FixtureLayout.russianPC
 
 /// Drives an Engine the way the macOS adapter does: one event at a time, with the current layout.
 private struct Typist {
-    var engine = Engine()
+    var engine = Engine(languageModels: BundledModels.all)
     var layouts: ActiveLayouts
 
     init(on current: FixtureLayout, enabled: [FixtureLayout] = [us, russianPC]) {
@@ -118,10 +118,10 @@ struct CorrectionTests {
     @Test("A reset forgets the keys typed before it", arguments: [ResetReason.mouse, .navigation, .chord, .appSwitch, .missedInput])
     func resetForgetsWord(_ reason: ResetReason) {
         var typist = Typist(on: us)
-        typist.type("ghb", as: us)
+        typist.type("ghbdtn", as: us)
         #expect(typist.press(.reset(reason)) == .pass)
-        typist.type("dtn", as: us)
-        #expect(typist.press(.boundary(.space)) == .pass)
+        typist.type("rfr", as: us)
+        #expect(typist.press(.boundary(.space)) == .swallow([.erase(3), .type("как"), .replayBoundary]))
     }
 
     @Test("A current layout without a supported language never corrects")

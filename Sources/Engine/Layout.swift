@@ -29,12 +29,6 @@ public protocol Layout: Sendable {
     func character(for key: Key) -> String
 }
 
-extension Layout {
-    func read(_ keys: [Key]) -> String {
-        keys.map(character(for:)).joined()
-    }
-}
-
 /// The layout keys are currently typed in, and every layout the user has enabled.
 public struct ActiveLayouts: Sendable {
     public var current: any Layout

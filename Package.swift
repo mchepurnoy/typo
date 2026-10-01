@@ -13,6 +13,6 @@ let package = Package(
         .target(name: "Engine"),
         // Thin macOS adapter and app shell, verified by docs/qa-checklist.md.
         .executableTarget(name: "Typo", dependencies: ["Engine"]),
-        .testTarget(name: "EngineTests", dependencies: ["Engine"]),
+        .testTarget(name: "EngineTests", dependencies: ["Engine"], exclude: ["Accuracy"]),
     ]
 )

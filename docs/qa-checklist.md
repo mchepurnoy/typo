@@ -9,6 +9,7 @@ Setup: build with `scripts/build-app.sh`, enable the **U.S.** and **Russian – 
 - [ ] `scripts/build-app.sh` succeeds from a clean checkout
 - [ ] `open build/Typo.app` shows a keyboard icon in the menu bar and no Dock icon
 - [ ] The menu has **Quit Typo** (⌘Q), and it quits the app
+- [ ] Console.app filtered on process `Typo` shows no "language model … not loaded" errors
 
 ## Permissions
 
@@ -31,6 +32,9 @@ Until ticket 09 (fenced fix pipeline) lands, type at a normal pace: a key typed 
 | `hello world␣` on U.S. is left alone | | | | | |
 | `plan b␣` on U.S. is left alone (short word) | | | | | |
 | On Russian – PC, the keys of `hello␣` (`руддщ`) → `hello ` | | | | | |
+| On Russian – PC, `сщву␣` → `code `, `тпштч␣` → `nginx ` | | | | | |
+| Typing a normal paragraph in English on U.S. changes nothing | | | | | |
+| Typing a normal paragraph in Russian on Russian – PC changes nothing | | | | | |
 | `ghbdtnn⌫␣` → `привет ` (Backspace edits the word) | | | | | |
 | `ghb`, click elsewhere in the text, `dtn␣` → no correction | | | | | |
 | `ghb`, ⌘-Tab away and back, `dtn␣` → no correction | | | | | |

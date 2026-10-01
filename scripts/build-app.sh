@@ -13,8 +13,9 @@ BIN_DIR=$(swift build -c release --show-bin-path)
 
 pkill -x Typo 2>/dev/null || true
 rm -rf "$APP"
-mkdir -p "$APP/Contents/MacOS"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/Typo" "$APP/Contents/MacOS/Typo"
+cp LanguageModels/*.lm "$APP/Contents/Resources/"
 cp Support/Info.plist "$APP/Contents/Info.plist"
 codesign --force --sign "${CODESIGN_ID:--}" "$APP"
 

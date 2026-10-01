@@ -10,10 +10,14 @@ import Engine
 final class KeyboardMonitor {
     private static let syntheticTag: Int64 = 0x7479_706F  // "typo"
 
-    private var engine = Engine()
+    private var engine: Engine
     private let layouts = SystemLayouts()
     private let eventSource = CGEventSource(stateID: .privateState)
     private var tap: CFMachPort?
+
+    init(languageModels: [LanguageModel]) {
+        engine = Engine(languageModels: languageModels)
+    }
 
     /// Installs the tap. Fails until the app is trusted for Accessibility.
     func start() -> Bool {

@@ -2,7 +2,7 @@
 
 A native macOS menu-bar app that fixes words typed in the wrong keyboard layout: type `ghbdtn` on the U.S. layout, press Space, get `привет`.
 
-Early development. Detection currently uses a small built-in word list (see `Sources/Engine/Detector.swift`).
+Early development.
 
 ## Requirements
 
@@ -41,7 +41,7 @@ Detection uses one language model per supported language (English, Russian, Germ
 scripts/build-language-models.py
 ```
 
-Sources, licence, attribution and the file format are in [`LanguageModels/SOURCES.md`](LanguageModels/SOURCES.md).
+Sources, licence, attribution and the file format are in [`LanguageModels/SOURCES.md`](LanguageModels/SOURCES.md). The accuracy test runs held-out news text through the Engine (`Tests/EngineTests/Accuracy/`, regenerate with `scripts/build-accuracy-corpus.py`).
 
 ## Privacy
 

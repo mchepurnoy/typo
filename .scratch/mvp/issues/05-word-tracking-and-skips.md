@@ -15,3 +15,5 @@ Spec: `.scratch/mvp/spec.md`. Glossary: `CONTEXT.md`.
 ## Comments
 
 2026-09-26 — From ticket 01's review: the adapter builds `Key` from Shift only and ignores Caps Lock (`.maskAlphaShift`), so `GHBDTN` typed with Caps Lock on becomes lowercase `привет`. Capitalisation work should carry Caps Lock through to layout reading (`UCKeyTranslate` `alphaLock` modifier), not just Shift.
+
+2026-10-01 — From ticket 03: the remaining false corrections on held-out news are all-caps or short abbreviations (`Hbf`, `Ltd`, `NBD`, `ФПС`/`фпс`). An "all caps, unless Caps Lock is on" skip rule (as RuSwitcher does) would remove most of them.
