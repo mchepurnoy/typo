@@ -13,6 +13,9 @@ struct TypoApp: App {
         } label: {
             MenuBarIcon(status: delegate.status, settings: delegate.settings)
         }
+        Settings {
+            SettingsView(settings: delegate.settings, launchAtLogin: delegate.launchAtLogin, status: delegate.status)
+        }
     }
 }
 
@@ -28,6 +31,7 @@ private struct MenuBarIcon: View {
 
 private struct MenuContent: View {
     let delegate: AppDelegate
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         let status = delegate.status
@@ -43,12 +47,12 @@ private struct MenuContent: View {
         }
         @Bindable var settings = delegate.settings
         Toggle("Pause Typo", isOn: $settings.isPaused)
-        Divider()
-        let login = delegate.launchAtLogin
-        Toggle("Launch at Login", isOn: Binding(get: { login.isEnabled }, set: { login.setEnabled($0) }))
-        if login.needsApproval {
-            Text("Allow Typo in System Settings → Login Items")
+        Button("Settings…") {
+            // An accessory app must be activated, or the window can open behind the frontmost app
+            NSApp.activate()
+            openSettings()
         }
+        .keyboardShortcut(",")
         Divider()
         Button("Quit Typo") { NSApp.terminate(nil) }
             .keyboardShortcut("q")

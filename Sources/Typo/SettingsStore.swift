@@ -11,6 +11,7 @@ final class SettingsStore {
         static let exceptions = "exceptions"
         static let learnedWords = "learnedWords"
         static let switchThreshold = "switchThreshold"
+        static let switchesLayout = "switchesLayout"
         static let hotkey = "hotkey"
         static let isPaused = "isPaused"
         static let excludedApps = "excludedApps"
@@ -71,17 +72,29 @@ final class SettingsStore {
         didSet { defaults.set(playsSound, forKey: Key.playsSound) }
     }
 
-    /// Consecutive corrections (at least 1) before the layout is switched; `nil` never switches.
-    /// Stored as 0 for `nil`.
-    var switchThreshold: Int? {
+    /// Whether the layout is switched after `switchAfter` corrections in a row.
+    var switchesLayout: Bool {
         didSet {
-            // Assigning inside didSet does not call it again, so carry on with the clamped value
-            if let threshold = switchThreshold, threshold < 1 { switchThreshold = 1 }
-            guard switchThreshold != oldValue else { return }
-            defaults.set(switchThreshold ?? 0, forKey: Key.switchThreshold)
+            guard switchesLayout != oldValue else { return }
+            defaults.set(switchesLayout, forKey: Key.switchesLayout)
             onChange?(engineSettings)
         }
     }
+
+    /// Consecutive corrections (at least 1) before the layout is switched; kept while switching is
+    /// off, so turning it back on restores the user's choice.
+    var switchAfter: Int {
+        didSet {
+            // Assigning inside didSet does not call it again, so carry on with the clamped value
+            if switchAfter < 1 { switchAfter = 1 }
+            guard switchAfter != oldValue else { return }
+            defaults.set(switchAfter, forKey: Key.switchThreshold)
+            onChange?(engineSettings)
+        }
+    }
+
+    /// The Engine's threshold: `nil` never switches.
+    var switchThreshold: Int? { switchesLayout ? switchAfter : nil }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -91,8 +104,10 @@ final class SettingsStore {
         isPaused = defaults.bool(forKey: Key.isPaused)
         excludedApps = Set(defaults.stringArray(forKey: Key.excludedApps) ?? [])
         playsSound = defaults.bool(forKey: Key.playsSound)
-        let threshold = defaults.object(forKey: Key.switchThreshold) as? Int ?? 2
-        switchThreshold = threshold > 0 ? threshold : nil
+        // Before switchesLayout existed, 0 meant "never switch"
+        let stored = defaults.object(forKey: Key.switchThreshold) as? Int ?? 2
+        switchesLayout = defaults.object(forKey: Key.switchesLayout) as? Bool ?? (stored > 0)
+        switchAfter = stored >= 1 ? stored : 2
     }
 
     var engineSettings: Engine.Settings {

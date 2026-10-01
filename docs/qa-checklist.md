@@ -8,13 +8,31 @@ Setup: turn off System Settings → Keyboard → Input Sources → "Automaticall
 
 - [ ] `scripts/build-app.sh` succeeds from a clean checkout
 - [ ] `open build/Typo.app` shows a keyboard icon in the menu bar and no Dock icon
-- [ ] The menu has **Quit Typo** (⌘Q), and it quits the app
+- [ ] The menu has **Pause Typo**, **Settings…** (⌘,) and **Quit Typo** (⌘Q); Quit quits the app
 - [ ] Console.app filtered on process `Typo` shows no "language model … not loaded" errors
 
-## Permissions
+## Permissions and onboarding
 
-- [ ] First launch without Accessibility: macOS shows the Accessibility prompt and the menu says "Waiting for Accessibility permission…"
-- [ ] Granting Accessibility in System Settings starts corrections within a few seconds, without relaunching; the waiting message disappears
+- [ ] Fresh install (`tccutil reset Accessibility app.typo.Typo; tccutil reset ListenEvent app.typo.Typo; defaults delete app.typo.Typo`): the "Set Up Typo" window opens and shows both permissions as missing
+- [ ] Each "Open System Settings…" button opens the right pane (Accessibility, Input Monitoring)
+- [ ] Granting Accessibility turns its row green within a second and corrections start without relaunching
+- [ ] Revoking Accessibility while Typo runs: the menu says "Accessibility permission was turned off." and nothing is corrected; granting it back resumes corrections
+- [ ] Settings → General → "Launch at login" is on after the first launch; turning it off and rebooting does not start Typo; turning it on and rebooting does
+
+## Pause, excluded apps and feedback
+
+- [ ] **Pause Typo** shows a pause icon and `ghbdtn␣` stays; unpausing corrects again; the pause survives a relaunch
+- [ ] Settings → Excluded Apps → add Terminal: nothing is corrected in Terminal, TextEdit still corrects; Spotlight opened over Terminal still corrects
+- [ ] The menu-bar icon briefly fills on each correction
+- [ ] No sound by default; with Settings → General → "Play a sound on each correction" on, each correction plays one sound, also two corrections in a row
+
+## Settings
+
+- [ ] Every change applies at once, without relaunching
+- [ ] Changing the hotkey to "Double-tap Option": double Shift does nothing, double Option converts the last word
+- [ ] Switch threshold 3: the layout switches after the third correction in a row; turning automatic switching off never switches
+- [ ] Words: removing `ghbdtn` from Exceptions makes `ghbdtn␣` correct again; adding a word by hand stops it being corrected; removing a learned word stops its automatic correction
+- [ ] Layouts lists every enabled layout, with U.S. and Russian – PC marked supported and an unsupported one (e.g. Ukrainian) marked "Not supported"
 
 ## Correction
 

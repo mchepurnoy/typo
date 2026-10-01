@@ -56,10 +56,10 @@ final class KeyboardMonitor {
     private var isBackingOff = false
 
     init(languageModels: [LanguageModel], spellChecker: (any SpellChecker)?, settings: SettingsStore) {
-        engine = Engine(languageModels: languageModels, spellChecker: spellChecker, settings: settings.engineSettings)
+        engine = Engine(languageModels: languageModels, spellChecker: spellChecker, settings: Self.engineSettings(settings.engineSettings))
         self.settings = settings
         settings.onChange = { [weak self] in
-            self?.engine.settings = $0
+            self?.engine.settings = Self.engineSettings($0)
             // Pause means no more changes, including a switch a fix asked for
             if $0.isPaused { self?.pendingLayout = nil }
         }
@@ -83,6 +83,14 @@ final class KeyboardMonitor {
     }
 
     var isRunning: Bool { tap != nil }
+
+    /// The user's settings, with typo itself always excluded: its own fields (the settings window)
+    /// take words as typed.
+    private static func engineSettings(_ settings: Engine.Settings) -> Engine.Settings {
+        var settings = settings
+        if let ownID = Bundle.main.bundleIdentifier { settings.excludedApps.insert(ownID) }
+        return settings
+    }
 
     /// Installs the tap. Fails until the app is trusted for Accessibility.
     func start() -> Bool {

@@ -5,12 +5,15 @@ import Foundation
 /// A macOS keyboard layout read with `UCKeyTranslate` over its Unicode key layout data.
 struct SystemLayout: Layout {
     let id: String
+    /// The name macOS shows, e.g. "Russian – PC".
+    let name: String
     let language: Language?
     /// `nil` for input sources without key layout data (e.g. some input methods); they type nothing.
     private let keyLayoutData: Data?
 
     init(_ source: TISInputSource) {
         id = source.string(kTISPropertyInputSourceID) ?? "?"
+        name = source.string(kTISPropertyLocalizedName) ?? id
         language = source.languages.first.flatMap(Language.init(languageCode:))
         keyLayoutData = source.property(kTISPropertyUnicodeKeyLayoutData).map {
             Unmanaged<CFData>.fromOpaque($0).takeUnretainedValue() as Data
@@ -123,5 +126,12 @@ private extension TISInputSource {
     var languages: [String] {
         property(kTISPropertyInputSourceLanguages)
             .flatMap { Unmanaged<CFArray>.fromOpaque($0).takeUnretainedValue() as? [String] } ?? []
+    }
+}
+
+extension SystemLayouts {
+    /// The enabled layouts, read the same way as for the Engine; for the settings window.
+    static func enabled() -> [SystemLayout] {
+        read().0.enabled.compactMap { $0 as? SystemLayout }
     }
 }

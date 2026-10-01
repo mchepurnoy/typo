@@ -46,6 +46,14 @@ struct RevertTests {
         #expect(session.engine.settings.exceptions == ["ghbdtn"])
     }
 
+    @Test("Removing an exception makes the word correctable again, at once")
+    func removingException() {
+        var session = Session(settings: .init(exceptions: ["ghbdtn"]))
+        #expect(session.word("ghbdtn") == .pass)
+        session.engine.settings.exceptions.remove("ghbdtn")
+        #expect(session.word("ghbdtn") == .swallow([.erase(6), .type("привет"), .replayBoundary]))
+    }
+
     @Test("Exceptions given in the settings are honoured")
     func seededExceptions() {
         var session = Session(settings: .init(exceptions: ["ghbdtn"]))
