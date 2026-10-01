@@ -2,7 +2,7 @@
 
 The macOS adapter and app shell have no unit tests; run this checklist before merging changes to `Sources/Typo` and before each release. Tickets that add adapter or app behaviour add their checks here.
 
-Setup: build with `scripts/build-app.sh`, enable the **U.S.** and **Russian – PC** layouts, start on U.S. unless a check says otherwise. `␣` is Space, `⏎` is Return, `⇥` is Tab.
+Setup: turn off System Settings → Keyboard → Input Sources → "Automatically switch to a document's input source" (it can undo typo's layout switch). Build with `scripts/build-app.sh`, enable the **U.S.** and **Russian – PC** layouts, start on U.S. unless a check says otherwise. `␣` is Space, `⏎` is Return, `⇥` is Tab.
 
 ## App shell
 
@@ -24,7 +24,9 @@ Until ticket 09 (fenced fix pipeline) lands, type at a normal pace: a key typed 
 
 | Check | TextEdit | Safari | Chrome | Terminal | Electron |
 | --- | --- | --- | --- | --- | --- |
-| `ghbdtn rfr ␣` on U.S. → `привет как ` | | | | | |
+| `ghbdtn rfr ␣` on U.S. → `привет как `, and the menu-bar layout indicator switches to Russian after `rfr` | | | | | |
+| `ghbdtn d␣` on U.S. → `привет в ` (the second correction, so the layout switches to Russian); `plan b␣` stays | | | | | |
+| `ghbdtn API rfr␣` → `привет API как`, and the layout does not switch | | | | | |
 | `,eltn␣` on U.S. → `будет ` (U.S. punctuation keys are Russian letters) | | | | | |
 | `Ghbdtn␣` on U.S. → `Привет ` | | | | | |
 | With Caps Lock on, `GHBDTN␣` on U.S. → `ПРИВЕТ ` | | | | | |

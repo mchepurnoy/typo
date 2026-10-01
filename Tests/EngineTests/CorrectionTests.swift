@@ -68,7 +68,8 @@ struct CorrectionTests {
         typist.type("ghbdtn", as: us)
         #expect(typist.press(.boundary(.space)) == .swallow([.erase(6), .type("привет"), .replayBoundary]))
         typist.type("rfr", as: us)
-        #expect(typist.press(.boundary(.space)) == .swallow([.erase(3), .type("как"), .replayBoundary]))
+        #expect(typist.press(.boundary(.space))
+            == .swallow([.erase(3), .type("как"), .replayBoundary, .selectLayout(russianPC.id)]))
     }
 
     @Test("Keys on U.S. punctuation count as letters: ,eltn becomes будет")

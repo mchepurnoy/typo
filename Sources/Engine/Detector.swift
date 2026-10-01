@@ -2,6 +2,8 @@
 struct Correction: Equatable {
     let original: String
     let replacement: String
+    /// The layout the word was re-read under: the correction's direction.
+    let targetLayoutID: String
 }
 
 /// Decides whether a word was typed in the wrong layout, using the language models.
@@ -12,7 +14,8 @@ struct Correction: Equatable {
 /// so a lexicon hit outranks trigram scores, while trigrams still judge words the lexicon does not
 /// know (`nginx`) and tolerate a typo (`ghbdtnn`).
 struct Detector {
-    /// Words of at most this many letters are short words, never corrected on their own.
+    /// Words of at most this many keys are short words, corrected only after a correction in the
+    /// same direction.
     static let shortWordLength = 2
     /// Plausibility gained per unit of Zipf frequency when the word is in the lexicon.
     static let lexiconWeight = 0.6
@@ -41,8 +44,13 @@ struct Detector {
         self.spellChecker = spellChecker
     }
 
-    /// - Parameter recent: the most recently active layout ID per script, to pick between targets.
-    func correction(for word: [Key], layouts: ActiveLayouts, recent: [Script: String]) -> Correction? {
+    /// - Parameters:
+    ///   - recent: the most recently active layout ID per script, to pick between targets.
+    ///   - previousTarget: the target layout of the previous word's correction, if it was corrected;
+    ///     a short word is only corrected in that same direction.
+    func correction(
+        for word: [Key], layouts: ActiveLayouts, recent: [Script: String], previousTarget: String? = nil
+    ) -> Correction? {
         guard let readings = readings(of: word, layouts: layouts, recent: recent),
               !Self.isSkipped(readings.original)
         else { return nil }
@@ -50,6 +58,7 @@ struct Detector {
         let typedJudgements = readings.sourceModels.map { Judgement(of: readings.typed, in: $0, spellChecker: spellChecker) }
         let typedKnown = typedJudgements.contains { $0.isKnown }
         guard let typedPlausibility = typedJudgements.map(\.plausibility).max() else { return nil }
+        let typedFrequency = typedJudgements.compactMap(\.frequency).max()
 
         var best: (correction: Correction, margin: Double)?
         for target in readings.targets {
@@ -58,7 +67,15 @@ struct Detector {
             if typedKnown && !judgement.isKnown { continue }
             let margin = judgement.plausibility - typedPlausibility
             let accepted: Bool
-            if judgement.isKnown {
+            if word.count <= Self.shortWordLength {
+                // A short word is too ambiguous to judge alone ("plan b"): only right after a
+                // correction in the same direction, and only into a known, more frequent word
+                accepted = target.layoutID == previousTarget && judgement.isKnown
+                    && judgement.frequency! > typedFrequency ?? -.infinity
+            } else if target.reread.count <= Self.shortWordLength {
+                // A longer word that would become a short one inside punctuation: "(yt)" is not "(не)"
+                accepted = false
+            } else if judgement.isKnown {
                 accepted = margin > Self.knownMargin
             } else {
                 let required = Self.spellConfirms(target.reread, in: target.model.language, spellChecker)
@@ -66,7 +83,7 @@ struct Detector {
                 accepted = margin > required && judgement.trigramScore > Self.unknownFloor
             }
             if accepted, margin > best?.margin ?? -.infinity {
-                best = (Correction(original: readings.original, replacement: target.replacement), margin)
+                best = (Correction(original: readings.original, replacement: target.replacement, targetLayoutID: target.layoutID), margin)
             }
         }
         return best?.correction
@@ -91,6 +108,7 @@ struct Detector {
     /// A word as typed and as re-read under each candidate target layout.
     private struct Readings {
         struct Target {
+            let layoutID: String
             let model: LanguageModel
             /// The whole re-reading, as it would be typed.
             let replacement: String
@@ -119,10 +137,10 @@ struct Detector {
         let targets = targets(excluding: sourceScript, layouts: layouts, recent: recent).compactMap { target -> Readings.Target? in
             guard let model = target.language.flatMap({ models[$0] }) else { return nil }
             let rereadKeys = word.map(target.character(for:))
-            // Short words are judged by what they would become: ",tp" may become "без", "(yt)" not "(не)"
+            // Judged by what it would become: ",tp" may become "без"
             let reread = Self.core(rereadKeys)
-            guard reread.count > Self.shortWordLength else { return nil }
-            return Readings.Target(model: model, replacement: rereadKeys.joined(), reread: reread)
+            guard !reread.isEmpty else { return nil }
+            return Readings.Target(layoutID: target.id, model: model, replacement: rereadKeys.joined(), reread: reread)
         }
         return Readings(
             original: typedKeys.joined(), typed: typed,

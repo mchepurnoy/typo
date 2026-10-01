@@ -35,6 +35,9 @@ private struct Tally {
     /// Words of 3+ letters that got the right correction (wrong layout) or were left alone (right layout).
     var longRight = 0
     var longWords = 0
+    /// Words of 1–2 letters handled right: corrected only through the short-word rule.
+    var shortRight = 0
+    var shortWords = 0
     /// Words the engine changed although it should not have, or changed to the wrong text.
     var wrong: [String] = []
     /// Wrong-layout words of 3+ letters left uncorrected.
@@ -63,7 +66,10 @@ private func run(_ scenario: Scenario, spellChecker: (any SpellChecker)? = nil) 
         let corrected = response.actions.contains(.type(word))
         let right = scenario.isWrongLayout ? corrected : response == .pass
         tally.words += 1
-        if word.count >= 3 {
+        if word.count < 3 {
+            tally.shortWords += 1
+            if right { tally.shortRight += 1 }
+        } else {
             tally.longWords += 1
             if right { tally.longRight += 1 } else if scenario.isWrongLayout { tally.missed.append(word) }
         }
@@ -87,8 +93,10 @@ struct AccuracyTests {
     private func recall(_ scenario: Scenario) {
         let tally = run(scenario)
         print("recall \(scenario.testDescription): \(tally.longRight)/\(tally.longWords) = \(tally.longRate), "
-            + "wrong \(tally.wrong.count), missed e.g. \(Set(tally.missed).sorted().prefix(80))")
+            + "short words \(tally.shortRight)/\(tally.shortWords), wrong \(tally.wrong.count), missed e.g. \(Set(tally.missed).sorted().prefix(80))")
         #expect(tally.longRate >= 0.97)
+        // In running wrong-layout text most short words follow a corrected word
+        #expect(Double(tally.shortRight) / Double(max(tally.shortWords, 1)) >= 0.9)
         #expect(tally.wrong.isEmpty, "\(tally.wrong)")
     }
 

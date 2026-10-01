@@ -6,6 +6,8 @@ public enum Action: Equatable, Sendable {
     case type(String)
     /// Post the swallowed boundary key again.
     case replayBoundary
+    /// Make this layout (a macOS input source ID) the active one, for the typing that follows.
+    case selectLayout(String)
 }
 
 /// The Engine's answer to one event: whether the event reaches the app, and what to do next.

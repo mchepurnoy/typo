@@ -39,31 +39,46 @@ struct SystemLayout: Layout {
 @MainActor
 final class SystemLayouts {
     private(set) var active: ActiveLayouts
+    /// The enabled input sources by ID, to select one without enumerating them again.
+    private var sources: [String: TISInputSource]
 
     init() {
-        active = Self.read()
+        (active, sources) = Self.read()
         let center = DistributedNotificationCenter.default()
         let names: [CFString] = [kTISNotifySelectedKeyboardInputSourceChanged, kTISNotifyEnabledKeyboardInputSourcesChanged]
         for name in names {
             center.addObserver(forName: Notification.Name(name as String), object: nil, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated { self?.active = Self.read() }
+                MainActor.assumeIsolated { self?.refresh() }
             }
         }
+    }
+
+    /// Makes the enabled layout with this input source ID the active one. `active` follows through
+    /// the selected-input-source notification (or `syncCurrent` on the next key).
+    @discardableResult
+    func select(_ id: String) -> Bool {
+        guard let source = sources[id] else { return false }
+        return TISSelectInputSource(source) == noErr
     }
 
     /// Re-reads the layouts if the current one changed: the change notification can arrive after
     /// the first key typed on the new layout. About 5 µs, so it can run on every key.
     func syncCurrent() {
         let id = TISCopyCurrentKeyboardLayoutInputSource().takeRetainedValue().string(kTISPropertyInputSourceID)
-        if id != active.current.id { active = Self.read() }
+        if id != active.current.id { refresh() }
     }
 
-    private static func read() -> ActiveLayouts {
+    private func refresh() {
+        (active, sources) = Self.read()
+    }
+
+    private static func read() -> (ActiveLayouts, [String: TISInputSource]) {
         let filter = [kTISPropertyInputSourceType as String: kTISTypeKeyboardLayout as String] as CFDictionary
-        let sources = TISCreateInputSourceList(filter, false)?.takeRetainedValue() as? [TISInputSource] ?? []
-        let enabled = sources.map(SystemLayout.init)
+        let list = TISCreateInputSourceList(filter, false)?.takeRetainedValue() as? [TISInputSource] ?? []
+        let enabled = list.map(SystemLayout.init)
         let current = SystemLayout(TISCopyCurrentKeyboardLayoutInputSource().takeRetainedValue())
-        return ActiveLayouts(current: enabled.first { $0.id == current.id } ?? current, enabled: enabled)
+        let sources = Dictionary(zip(enabled.map(\.id), list), uniquingKeysWith: { first, _ in first })
+        return (ActiveLayouts(current: enabled.first { $0.id == current.id } ?? current, enabled: enabled), sources)
     }
 }
 

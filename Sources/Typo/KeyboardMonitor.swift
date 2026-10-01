@@ -95,6 +95,10 @@ final class KeyboardMonitor {
                 for character in text { press(0, typing: String(character)) }
             case .replayBoundary:
                 if let copy = boundary?.copy() { post(copy) }
+            case .selectLayout(let id):
+                // Only once the retype above has been delivered: switching inside the tap callback
+                // would change the layout before the app sees the posted events
+                DispatchQueue.main.async { [layouts] in layouts.select(id) }
             }
         }
     }
