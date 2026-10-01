@@ -18,9 +18,15 @@ final class OnboardingWindow {
                 contentRect: .zero, styleMask: [.titled, .closable], backing: .buffered, defer: false)
             window.title = "Set Up Typo"
             window.isReleasedWhenClosed = false
-            window.contentView = NSHostingView(rootView: OnboardingView(permissions: permissions) { [weak self] in
+            let content = NSHostingView(rootView: OnboardingView(permissions: permissions) { [weak self] in
                 self?.window?.close()
             })
+            // Sized once, here. Letting the hosting view drive the window's min/max size whenever its
+            // wrapping text re-measures (e.g. a permission turns green) can loop through constraint
+            // passes until AppKit throws and the app crashes.
+            content.sizingOptions = []
+            window.contentView = content
+            window.setContentSize(content.fittingSize)
             window.center()
             self.window = window
         }
@@ -69,7 +75,7 @@ private struct OnboardingView: View {
             }
         }
         .padding(24)
-        .frame(width: 460)
+        .frame(width: 460, height: 360, alignment: .top)
     }
 }
 
