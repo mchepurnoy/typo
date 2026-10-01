@@ -1,4 +1,5 @@
 import AppKit
+import Carbon.HIToolbox
 import CoreGraphics
 import Engine
 
@@ -33,6 +34,13 @@ final class KeyboardMonitor {
         CFRunLoopAddSource(CFRunLoopGetMain(), CFMachPortCreateRunLoopSource(nil, tap, 0), .commonModes)
         CGEvent.tapEnable(tap: tap, enable: true)
 
+        // The tap sees no keys while secure input is on, so check for it rather than wait for one
+        Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated {
+                if IsSecureEventInputEnabled() { self?.send(.reset(.secureInput)) }
+            }
+        }
+
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
         ) { [weak self] _ in
@@ -53,11 +61,17 @@ final class KeyboardMonitor {
         case .leftMouseDown, .rightMouseDown, .otherMouseDown:
             send(.reset(.mouse))
             return true
+        case .keyDown where IsSecureEventInputEnabled():
+            // A password field: track nothing (normally the tap does not even see these keys)
+            send(.reset(.secureInput))
+            return true
         case .keyDown:
+            layouts.syncCurrent()
             let flags = event.flags
             let input = InputEvent.keyDown(
                 code: UInt16(event.getIntegerValueField(.keyboardEventKeycode)),
                 shift: flags.contains(.maskShift),
+                capsLock: flags.contains(.maskAlphaShift),
                 chord: !flags.isDisjoint(with: [.maskCommand, .maskControl, .maskAlternate]))
             let response = engine.handle(input, layouts: layouts.active)
             perform(response.actions, boundary: event)

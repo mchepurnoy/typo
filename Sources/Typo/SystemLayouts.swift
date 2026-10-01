@@ -24,7 +24,9 @@ struct SystemLayout: Layout {
             var deadKeyState: UInt32 = 0
             var length = 0
             var chars = [UniChar](repeating: 0, count: 4)
-            let modifiers: UInt32 = key.shift ? UInt32(shiftKey >> 8) & 0xFF : 0
+            var modifiers: UInt32 = 0
+            if key.shift { modifiers |= UInt32(shiftKey >> 8) & 0xFF }
+            if key.capsLock { modifiers |= UInt32(alphaLock >> 8) & 0xFF }
             let status = UCKeyTranslate(
                 layout, key.code, UInt16(kUCKeyActionDown), modifiers, UInt32(LMGetKbdType()),
                 OptionBits(kUCKeyTranslateNoDeadKeysBit), &deadKeyState, chars.count, &length, &chars)
@@ -47,6 +49,13 @@ final class SystemLayouts {
                 MainActor.assumeIsolated { self?.active = Self.read() }
             }
         }
+    }
+
+    /// Re-reads the layouts if the current one changed: the change notification can arrive after
+    /// the first key typed on the new layout. About 5 µs, so it can run on every key.
+    func syncCurrent() {
+        let id = TISCopyCurrentKeyboardLayoutInputSource().takeRetainedValue().string(kTISPropertyInputSourceID)
+        if id != active.current.id { active = Self.read() }
     }
 
     private static func read() -> ActiveLayouts {

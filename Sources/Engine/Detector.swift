@@ -43,7 +43,9 @@ struct Detector {
 
     /// - Parameter recent: the most recently active layout ID per script, to pick between targets.
     func correction(for word: [Key], layouts: ActiveLayouts, recent: [Script: String]) -> Correction? {
-        guard let readings = readings(of: word, layouts: layouts, recent: recent) else { return nil }
+        guard let readings = readings(of: word, layouts: layouts, recent: recent),
+              !Self.isSkipped(readings.original)
+        else { return nil }
 
         let typedJudgements = readings.sourceModels.map { Judgement(of: readings.typed, in: $0, spellChecker: spellChecker) }
         let typedKnown = typedJudgements.contains { $0.isKnown }
@@ -165,6 +167,16 @@ struct Detector {
         while let first = range.first, surroundingPunctuation.contains(keys[first]) { range = range.dropFirst() }
         while let last = range.last, surroundingPunctuation.contains(keys[last]) { range = range.dropLast() }
         return keys[range].joined()
+    }
+
+    /// A skipped word looks technical and is never corrected automatically: it contains a digit,
+    /// `_` or `://`, has `@` or `/` inside it, or is camelCase (a lowercase letter then a capital).
+    /// At either end `@` and `/` may be Russian punctuation typed on U.S.: `ghbdtn/` is `привет.`
+    /// and `@ghbdtn@` is `"привет"`.
+    private static func isSkipped(_ typed: String) -> Bool {
+        if typed.contains(where: { $0.isNumber || $0 == "_" }) || typed.contains("://") { return true }
+        if typed.dropFirst().dropLast().contains(where: { $0 == "@" || $0 == "/" }) { return true }
+        return zip(typed, typed.dropFirst()).contains { $0.isLowercase && $1.isUppercase }
     }
 
     /// What people type right before or after a word. Not `§` or `` ` ``: on U.S. those are where

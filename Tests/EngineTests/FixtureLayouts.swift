@@ -7,8 +7,10 @@ struct FixtureLayout: Layout {
     let plain: [UInt16: String]
     let shifted: [UInt16: String]
 
+    /// Caps Lock is approximated the way macOS layouts behave: it capitalises unshifted letters.
     func character(for key: Key) -> String {
-        (key.shift ? shifted : plain)[key.code] ?? ""
+        let character = (key.shift ? shifted : plain)[key.code] ?? ""
+        return key.capsLock && !key.shift && character.first?.isLetter == true ? character.uppercased() : character
     }
 
     /// The keys that type `text` on this layout.

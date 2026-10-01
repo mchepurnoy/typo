@@ -22,19 +22,21 @@ public enum ResetReason: Equatable, Sendable {
     case appSwitch
     /// Keys may have been typed that the Engine never saw (e.g. the event tap was disabled).
     case missedInput
+    /// Secure input (a password field) is on: nothing is tracked until it is off.
+    case secureInput
 }
 
 extension InputEvent {
     /// Classifies a key-down by its macOS virtual keycode.
     /// - Parameter chord: whether ⌘, ⌃ or ⌥ was held.
-    public static func keyDown(code: UInt16, shift: Bool, chord: Bool) -> InputEvent {
+    public static func keyDown(code: UInt16, shift: Bool, capsLock: Bool = false, chord: Bool) -> InputEvent {
         if chord { return .reset(.chord) }
         switch code {
         case KeyCode.space: return .boundary(.space)
         case KeyCode.return, KeyCode.keypadEnter: return .boundary(.return)
         case KeyCode.tab: return .boundary(.tab)
         case KeyCode.delete: return .backspace
-        case KeyCode.wordKeys: return .key(Key(code: code, shift: shift))
+        case KeyCode.wordKeys: return .key(Key(code: code, shift: shift, capsLock: capsLock))
         default: return .reset(.navigation)
         }
     }

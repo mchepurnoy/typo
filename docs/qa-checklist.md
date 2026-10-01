@@ -27,6 +27,9 @@ Until ticket 09 (fenced fix pipeline) lands, type at a normal pace: a key typed 
 | `ghbdtn rfr ␣` on U.S. → `привет как ` | | | | | |
 | `,eltn␣` on U.S. → `будет ` (U.S. punctuation keys are Russian letters) | | | | | |
 | `Ghbdtn␣` on U.S. → `Привет ` | | | | | |
+| With Caps Lock on, `GHBDTN␣` on U.S. → `ПРИВЕТ ` | | | | | |
+| `ghbdtn2␣`, `ghbdtn_rfr␣`, `getValue␣` on U.S. are left alone (skipped words) | | | | | |
+| `ghb`, switch the layout with Caps Lock or 🌐 (no ⌘/⌃/⌥), `вет␣` → no correction | | | | | |
 | `ghbdtn⏎` → `привет` then a new line | | | | | |
 | `ghbdtn⇥` → `привет` then a tab (or focus moves on, as Tab does in that app) | | | | | |
 | `hello world␣` on U.S. is left alone | | | | | |
@@ -40,6 +43,11 @@ Until ticket 09 (fenced fix pipeline) lands, type at a normal pace: a key typed 
 | `ghb`, click elsewhere in the text, `dtn␣` → no correction | | | | | |
 | `ghb`, ⌘-Tab away and back, `dtn␣` → no correction | | | | | |
 | `ghb`, ←, `dtn␣` → no correction | | | | | |
+
+## Password fields
+
+- [ ] In a Safari login form's password field, typing `ghbdtn␣` is not corrected
+- [ ] After leaving the password field, `ghbdtn␣` in a normal field is corrected again
 
 ## Privacy
 
