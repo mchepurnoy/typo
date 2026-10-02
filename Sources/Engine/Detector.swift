@@ -211,18 +211,24 @@ struct Detector {
     }
 
     /// A skipped word looks technical and is never corrected automatically: it contains a digit,
-    /// `_` or `://`, has `@` or `/` inside it, or is camelCase (a lowercase letter then a capital).
+    /// `_` or `://`, starts with `/`, has `@` or `/` inside it, or is camelCase (a lowercase letter
+    /// then a capital).
     /// At either end `@` and `/` may be Russian punctuation typed on U.S.: `ghbdtn/` is `привет.`
     /// and `@ghbdtn@` is `"привет"`.
     private static func isSkipped(_ typed: String) -> Bool {
         if typed.contains(where: { $0.isNumber || $0 == "_" }) || typed.contains("://") { return true }
+        // A slash command or a path ("/exit"); no Russian word starts with the full stop "/" stands for
+        if typed.hasPrefix("/") { return true }
         if typed.dropFirst().dropLast().contains(where: { $0 == "@" || $0 == "/" }) { return true }
         return zip(typed, typed.dropFirst()).contains { $0.isLowercase && $1.isUppercase }
     }
 
-    /// What people type right before or after a word. Not `§` or `` ` ``: on U.S. those are where
-    /// Russian ё sits, as in "ещё" typed as "to§".
+    /// What people type right before or after a word: punctuation, and the symbols that lead
+    /// mentions, hashtags, variables and flags (`@user`, `#tag`, `$HOME`, `--help`), so those are
+    /// judged by their word. Not `§` or `` ` ``: on U.S. those are where Russian ё sits, as in "ещё"
+    /// typed as "to§".
     private static let surroundingPunctuation: Set<String> = [
         ".", ",", ";", ":", "!", "?", "'", "\"", "(", ")", "[", "]", "{", "}", "<", ">", "«", "»", "…",
+        "/", "@", "#", "$", "~", "-", "*", "&", "%", "=", "+", "|", "\\", "^",
     ]
 }

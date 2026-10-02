@@ -47,6 +47,7 @@ Run in each app: TextEdit, Safari (a text field), Chrome (a text field), Termina
 | `Ghbdtn␣` on U.S. → `Привет ` | | | | | |
 | With Caps Lock on, `GHBDTN␣` on U.S. → `ПРИВЕТ ` | | | | | |
 | `ghbdtn2␣`, `ghbdtn_rfr␣`, `getValue␣` on U.S. are left alone (skipped words) | | | | | |
+| `/exit⏎`, `@user␣`, `#tag␣`, `$HOME␣` on U.S. are left alone; on Russian – PC, `.учше⏎` → `/exit` | | | | | |
 | `ghb`, switch the layout with Caps Lock or 🌐 (no ⌘/⌃/⌥), `вет␣` → no correction | | | | | |
 | `ghbdtn⏎` → `привет` then a new line | | | | | |
 | `ghbdtn⇥` → `привет` then a tab (or focus moves on, as Tab does in that app) | | | | | |
