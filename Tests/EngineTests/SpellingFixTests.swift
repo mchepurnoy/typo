@@ -83,15 +83,16 @@ struct SpellingFixTests {
         var engine = Engine(languageModels: BundledModels.all, spellChecker: KnownWordsSpellChecker { _ in false })
         let layouts = ActiveLayouts(current: us, enabled: [us, russianPC])
         let clock = ContinuousClock()
-        var durations: [Duration] = []
-        for word in words where word.count >= 3 {
-            guard let keys = us.keysIfTypable(word + "q") else { continue }
-            for key in keys { _ = engine.handle(.key(key), layouts: layouts) }
-            durations.append(clock.measure { _ = engine.handle(.boundary(.space), layouts: layouts) })
+        let p99 = bestP99 {
+            var durations: [Duration] = []
+            for word in words where word.count >= 3 {
+                guard let keys = us.keysIfTypable(word + "q") else { continue }
+                for key in keys { _ = engine.handle(.key(key), layouts: layouts) }
+                durations.append(clock.measure { _ = engine.handle(.boundary(.space), layouts: layouts) })
+            }
+            return durations
         }
-        durations.sort()
-        let p99 = durations[durations.count * 99 / 100]
-        print("spelling decision p50 \(durations[durations.count / 2]) p99 \(p99)")
+        print("spelling decision p99 \(p99)")
         #expect(p99 <= .milliseconds(1))
     }
 

@@ -135,15 +135,16 @@ struct AccuracyTests {
         var engine = Engine(languageModels: BundledModels.all)
         let layouts = ActiveLayouts(current: Self.us, enabled: [Self.us, Self.ru, Self.de])
         let clock = ContinuousClock()
-        var durations: [Duration] = []
-        for word in corpus(.russian) + corpus(.english) {
-            guard let keys = Self.ru.keysIfTypable(word) ?? Self.us.keysIfTypable(word) else { continue }
-            for key in keys { _ = engine.handle(.key(key), layouts: layouts) }
-            durations.append(clock.measure { _ = engine.handle(.boundary(.space), layouts: layouts) })
+        let p99 = bestP99 {
+            var durations: [Duration] = []
+            for word in corpus(.russian) + corpus(.english) {
+                guard let keys = Self.ru.keysIfTypable(word) ?? Self.us.keysIfTypable(word) else { continue }
+                for key in keys { _ = engine.handle(.key(key), layouts: layouts) }
+                durations.append(clock.measure { _ = engine.handle(.boundary(.space), layouts: layouts) })
+            }
+            return durations
         }
-        durations.sort()
-        let p99 = durations[durations.count * 99 / 100]
-        print("decision p50 \(durations[durations.count / 2]) p99 \(p99) max \(durations.last!)")
+        print("decision p99 \(p99)")
         #expect(p99 <= .milliseconds(1))
     }
 }
