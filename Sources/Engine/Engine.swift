@@ -56,6 +56,14 @@ public struct Engine: Sendable {
     /// The word before the current one, if it was left alone and only one Space separates them:
     /// the next word's correction may take it along (`yt ghbdtn` → `не привет`).
     private var previous: (keys: [Key], layout: any Layout)?
+    /// A word left alone and finished with Space, while Backspace may be erasing it: `remaining` is
+    /// how many of its characters (and the Space) are still on screen.
+    private var erasing: (keys: [Key], layout: any Layout, remaining: Int)?
+    /// The word being typed when a run of Backspaces started, which may abandon it.
+    private var abandoning: (keys: [Key], layout: any Layout)?
+    /// A word erased completely: if the next word is typed with the same keys on a layout of
+    /// another script, the erased spelling is learned.
+    private var erased: (keys: [Key], layout: any Layout)?
     private let detector: Detector
 
     private struct Revertible {
@@ -108,6 +116,9 @@ public struct Engine: Sendable {
         if case .key = event {} else if case .boundary = event {} else { previous = nil }
         switch event {
         case .key(let key):
+            // Typing again: a partial erase was an edit, and a started abandonment did not happen
+            erasing = nil
+            abandoning = nil
             word.append(key)
             keyScripts.append(layouts.current.language?.script)
             wordLayout = layouts.current
@@ -118,13 +129,29 @@ public struct Engine: Sendable {
             if word.isEmpty {
                 // Editing text before the word, maybe the correction itself: it no longer counts
                 streak = nil
+                if var erasing {
+                    erasing.remaining -= 1
+                    if erasing.remaining == 0 { erased = (erasing.keys, erasing.layout) }
+                    self.erasing = erasing
+                }
             } else {
+                if abandoning == nil, let wordLayout { abandoning = (word, wordLayout) }
                 word.removeLast()
                 keyScripts.removeLast()
+                if word.isEmpty {
+                    erased = abandoning
+                    abandoning = nil
+                }
             }
             prepareSpellCheck(layouts)
             return .pass
-        case .reset, .appActivated:
+        case .reset(let reason):
+            // ⌃Space or ⌘Space, the usual way to switch the layout, must not forget an erased word
+            let keep = reason == .chord ? erased : nil
+            forgetAll()
+            erased = keep
+            return .pass
+        case .appActivated:
             forgetAll()
             return .pass
         case .hotkey:
@@ -133,6 +160,10 @@ public struct Engine: Sendable {
             return Response(disposition: .pass, actions: convertManually(layouts, finished: justFinished))
         case .boundary(let boundary):
             defer { forgetWord() }
+            let retyped = erased
+            erased = nil
+            erasing = nil
+            abandoning = nil
             guard !word.isEmpty else { return .pass }
             let wordLayouts = trackedWordLayouts(layouts)
             let layoutCorrection = wordLayouts.flatMap(correction)
@@ -150,11 +181,14 @@ public struct Engine: Sendable {
             previous = nil
             guard var correction = layoutCorrection, let wordLayouts else {
                 streak = nil
-                if boundary == .space, let wordLayouts {
+                guard let wordLayouts else { return .pass }
+                if boundary == .space {
                     finished = (word, wordLayouts.current)
                     previous = (word, wordLayouts.current)
+                    let shown = word.map(wordLayouts.current.character(for:)).joined()
+                    erasing = (word, wordLayouts.current, shown.count + 1)
                 }
-                return .pass
+                return Response(disposition: .pass, actions: learnFromRetyping(retyped, layouts: wordLayouts))
             }
             var alsoCorrected = 0
             if let before,
@@ -179,6 +213,21 @@ public struct Engine: Sendable {
             }
             return .swallow(actions)
         }
+    }
+
+    /// If the word just typed repeats, on a layout of another script, the keys of a word the user
+    /// erased, learns the erased spelling: next time typo converts it by itself.
+    private mutating func learnFromRetyping(_ erased: (keys: [Key], layout: any Layout)?, layouts: ActiveLayouts) -> [Action] {
+        guard let erased, word.count >= 3, erased.keys.count >= 2, word.starts(with: erased.keys),
+              let erasedScript = erased.layout.language?.script, let script = layouts.current.language?.script,
+              erasedScript != script,
+              let conversion = detector.conversion(
+                  for: word, layouts: ActiveLayouts(current: erased.layout, enabled: layouts.enabled), recent: [:]),
+              !settings.learnedWords.contains(conversion.typedWord)
+        else { return [] }
+        settings.learnedWords.insert(conversion.typedWord)
+        settings.exceptions.remove(conversion.typedWord)
+        return [.recordLearnedWord(conversion.typedWord)]
     }
 
     /// A learned word is converted whatever detection says; anything else is up to the detector.
@@ -293,6 +342,9 @@ public struct Engine: Sendable {
         revertible = nil
         finished = nil
         previous = nil
+        erasing = nil
+        abandoning = nil
+        erased = nil
     }
 
     private mutating func forgetWord() {

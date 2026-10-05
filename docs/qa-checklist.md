@@ -108,6 +108,8 @@ Type as fast as you can, without pausing at the spaces. Nothing may be lost, dup
 | After converting `b` by hand, typing `b␣` again later → `и ` | | | | | |
 | Typing capitals (`Hello World`, Shift held while typing) never triggers a conversion | | | | | |
 
+| Learning by retyping: type a word typo misses on U.S. (e.g. `cutythbhetv␣`), erase it with ⌫ (word and space), switch with ⌃Space, type `сгенерируем␣` → Settings → Words shows `cutythbhetv → сгенерируем`, and the next `cutythbhetv␣` is converted | | | | | |
+
 - [ ] Quit and relaunch: a learned word is still corrected (`defaults read app.typo.Typo learnedWords`)
 
 ## Password fields
