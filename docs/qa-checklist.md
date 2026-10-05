@@ -63,6 +63,15 @@ Run in each app: TextEdit, Safari (a text field), Chrome (a text field), Termina
 | `ghb`, ⌘-Tab away and back, `dtn␣` → no correction | | | | | |
 | `ghb`, ←, `dtn␣` → no correction | | | | | |
 
+## Spelling fix
+
+| Check | TextEdit | Safari | Chrome | Terminal | Electron |
+| --- | --- | --- | --- | --- | --- |
+| `teh␣` → `the `, `превет␣` → `привет ` | | | | | |
+| ⌫ right after `teh␣` → `teh ` again, and `teh` is left alone from then on | | | | | |
+| A rare real word (`агентствах`, a name like `Кузьменков`) is left alone | | | | | |
+| Settings → General → "Fix typos" off: `teh␣` stays | | | | | |
+
 ## Fast typing
 
 Type as fast as you can, without pausing at the spaces. Nothing may be lost, duplicated or reordered.

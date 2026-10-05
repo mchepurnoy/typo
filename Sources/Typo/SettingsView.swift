@@ -52,6 +52,7 @@ private struct GeneralTab: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
 
+            Toggle("Fix typos in the right layout (teh → the)", isOn: $settings.fixesTypos)
             Toggle("Play a sound on each correction", isOn: $settings.playsSound)
         }
         .formStyle(.grouped)

@@ -6,6 +6,8 @@ struct Correction: Equatable {
     let targetLayoutID: String
     /// The typed word without surrounding punctuation, lowercased: what an exception records.
     let typedWord: String
+    /// Whether the replacement is a lexicon word, rather than one judged by its trigrams alone.
+    var isKnownWord = true
 }
 
 /// Decides whether a word was typed in the wrong layout, using the language models.
@@ -90,7 +92,7 @@ struct Detector {
             if accepted, margin > best?.margin ?? -.infinity {
                 let correction = Correction(
                     original: readings.original, replacement: target.replacement, targetLayoutID: target.layoutID,
-                    typedWord: readings.typed.lowercased())
+                    typedWord: readings.typed.lowercased(), isKnownWord: judgement.isKnown)
                 best = (correction, margin)
             }
         }
@@ -109,10 +111,109 @@ struct Detector {
             typedWord: readings.typed.lowercased())
     }
 
+    /// A misspelled word in the right layout, replaced with the intended word: the single most
+    /// frequent lexicon word one edit away (insert, delete, substitute, swap neighbours), when it is
+    /// clearly the best candidate. Only for lowercase words the spell checker explicitly calls
+    /// misspelled: inflected forms missing from the lexicon are real words, and capitalised words
+    /// are mostly names.
+    func spellingFix(for word: [Key], layouts: ActiveLayouts, exceptions: Set<String>) -> Correction? {
+        guard let spellChecker,
+              let readings = readings(of: word, layouts: layouts, recent: [:]),
+              !Self.isSkipped(readings.original),
+              !exceptions.contains(readings.typed.lowercased())
+        else { return nil }
+        let typed = readings.typed
+        guard typed.count >= 3, typed.allSatisfy({ $0.isLetter && $0.isLowercase }),
+              !readings.sourceModels.contains(where: { $0.frequency(of: typed) != nil })
+        else { return nil }
+        let verdicts = readings.sourceModels.map { spellChecker.isWord(typed, in: $0.language) }
+        guard verdicts.contains(false), !verdicts.contains(true) else { return nil }
+
+        var candidates: [String: Double] = [:]
+        let normalized = LanguageModel.normalize(typed)
+        for model in readings.sourceModels {
+            Self.forEachEdit(of: normalized, alphabet: Self.alphabet(model.language)) { edit in
+                if let frequency = model.frequency(ofNormalized: edit), frequency > candidates[edit] ?? -.infinity {
+                    candidates[edit] = frequency
+                }
+            }
+        }
+        let ranked = candidates.sorted { $0.value > $1.value }
+        guard let best = ranked.first,
+              best.value >= Self.spellingFixMinimumFrequency(length: typed.count),
+              ranked.count < 2 || best.value - ranked[1].value >= Self.spellingFixLead
+        else { return nil }
+
+        // Keep the punctuation around the word: "teh," → "the,"
+        guard let range = readings.original.firstRange(of: typed) else { return nil }
+        var replacement = readings.original
+        replacement.replaceSubrange(range, with: best.key)
+        return Correction(
+            original: readings.original, replacement: replacement, targetLayoutID: layouts.current.id,
+            typedWord: typed.lowercased())
+    }
+
+    /// How much more frequent (Zipf) the best fix must be than the next one.
+    static let spellingFixLead = 1.0
+
+    /// Short words have many neighbours: their fix must be a very common word.
+    private static func spellingFixMinimumFrequency(length: Int) -> Double {
+        switch length {
+        case ...3: 5.0
+        case 4: 4.0
+        default: 3.0
+        }
+    }
+
+    /// Calls `body` with every string one edit away from `word` (some more than once), building
+    /// each in a reused buffer.
+    private static func forEachEdit(of word: String, alphabet: [Character], _ body: (String) -> Void) {
+        let letters = Array(word)
+        var buffer = letters
+        buffer.reserveCapacity(letters.count + 1)
+        for i in 0..<letters.count {
+            // delete
+            buffer.remove(at: i)
+            body(String(buffer))
+            buffer.insert(letters[i], at: i)
+            // substitute
+            for letter in alphabet where letter != letters[i] {
+                buffer[i] = letter
+                body(String(buffer))
+            }
+            buffer[i] = letters[i]
+            // swap neighbours
+            if i + 1 < letters.count, letters[i] != letters[i + 1] {
+                buffer.swapAt(i, i + 1)
+                body(String(buffer))
+                buffer.swapAt(i, i + 1)
+            }
+        }
+        // insert
+        for i in 0...letters.count {
+            buffer.insert(" ", at: i)
+            for letter in alphabet {
+                buffer[i] = letter
+                body(String(buffer))
+            }
+            buffer.remove(at: i)
+        }
+    }
+
+    private static func alphabet(_ language: Language) -> [Character] {
+        switch language {
+        case .english: Array("abcdefghijklmnopqrstuvwxyz")
+        case .russian: Array("абвгдежзийклмнопрстуфхцчшщъыьэюя")
+        case .german: Array("abcdefghijklmnopqrstuvwxyzäöüß")
+        case .spanish: Array("abcdefghijklmnopqrstuvwxyzáéíóúüñ")
+        }
+    }
+
     /// Hands the readings of the word typed so far to the spell checker to prepare.
     func prepareSpellCheck(for word: [Key], layouts: ActiveLayouts, recent: [Script: String]) {
         guard let spellChecker, let readings = readings(of: word, layouts: layouts, recent: recent) else { return }
-        if Self.isSpellCheckable(readings.typed) {
+        // Three letters are enough for the spelling fix, which only uses a "misspelled" verdict
+        if readings.typed.count >= 3, readings.typed.allSatisfy(\.isLetter) {
             for model in readings.sourceModels { spellChecker.prepare(readings.typed, in: model.language) }
         }
         for target in readings.targets where Self.isSpellCheckable(target.reread) {

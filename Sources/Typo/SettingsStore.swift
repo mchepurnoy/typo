@@ -16,6 +16,7 @@ final class SettingsStore {
         static let isPaused = "isPaused"
         static let excludedApps = "excludedApps"
         static let playsSound = "playsSound"
+        static let fixesTypos = "fixesTypos"
     }
 
     /// The modifier whose double tap is the manual-conversion hotkey.
@@ -67,6 +68,15 @@ final class SettingsStore {
         }
     }
 
+    /// Whether misspelled words in the right layout are fixed; on by default.
+    var fixesTypos: Bool {
+        didSet {
+            guard fixesTypos != oldValue else { return }
+            defaults.set(fixesTypos, forKey: Key.fixesTypos)
+            onChange?(engineSettings)
+        }
+    }
+
     /// A sound on each correction; off by default.
     var playsSound: Bool {
         didSet { defaults.set(playsSound, forKey: Key.playsSound) }
@@ -104,6 +114,7 @@ final class SettingsStore {
         isPaused = defaults.bool(forKey: Key.isPaused)
         excludedApps = Set(defaults.stringArray(forKey: Key.excludedApps) ?? [])
         playsSound = defaults.bool(forKey: Key.playsSound)
+        fixesTypos = defaults.object(forKey: Key.fixesTypos) as? Bool ?? true
         // Before switchesLayout existed, 0 meant "never switch"
         let stored = defaults.object(forKey: Key.switchThreshold) as? Int ?? 2
         switchesLayout = defaults.object(forKey: Key.switchesLayout) as? Bool ?? (stored > 0)
@@ -113,7 +124,7 @@ final class SettingsStore {
     var engineSettings: Engine.Settings {
         Engine.Settings(
             switchThreshold: switchThreshold, exceptions: exceptions, learnedWords: learnedWords, isPaused: isPaused,
-            excludedApps: excludedApps)
+            excludedApps: excludedApps, fixesTypos: fixesTypos)
     }
 
     /// An exception is never learned at the same time, and the other way round.

@@ -16,11 +16,14 @@ public struct Engine: Sendable {
         public var isPaused: Bool
         /// Bundle IDs of apps typo ignores entirely.
         public var excludedApps: Set<String>
+        /// Whether a misspelled word in the right layout is replaced with the intended word.
+        public var fixesTypos: Bool
 
         public init(
             switchThreshold: Int? = 2, exceptions: Set<String> = [], learnedWords: Set<String> = [],
-            isPaused: Bool = false, excludedApps: Set<String> = []
+            isPaused: Bool = false, excludedApps: Set<String> = [], fixesTypos: Bool = true
         ) {
+            self.fixesTypos = fixesTypos
             self.switchThreshold = switchThreshold
             self.exceptions = exceptions
             self.learnedWords = learnedWords
@@ -127,7 +130,18 @@ public struct Engine: Sendable {
             defer { forgetWord() }
             guard !word.isEmpty else { return .pass }
             let wordLayouts = trackedWordLayouts(layouts)
-            guard let wordLayouts, let correction = correction(wordLayouts) else {
+            let layoutCorrection = wordLayouts.flatMap(correction)
+            // A word with a typo can look like gibberish typed in the wrong layout ("весх" → "dtc["):
+            // a confident spelling fix beats a conversion into a word only the trigrams vouch for
+            if let wordLayouts, settings.fixesTypos, layoutCorrection?.isKnownWord != true,
+               let fix = detector.spellingFix(for: word, layouts: wordLayouts, exceptions: settings.exceptions) {
+                streak = nil
+                if boundary == .space {
+                    revertible = Revertible(correction: fix, isManual: false, boundary: boundary, switchedFrom: nil)
+                }
+                return .swallow([.erase(fix.original.count), .type(fix.replacement), .replayBoundary])
+            }
+            guard let correction = layoutCorrection else {
                 streak = nil
                 if boundary == .space, let wordLayouts { finished = (word, wordLayouts.current) }
                 return .pass

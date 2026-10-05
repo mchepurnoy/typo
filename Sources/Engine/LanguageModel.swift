@@ -69,6 +69,11 @@ public struct LanguageModel: Sendable {
         lexicon[Self.normalize(word)].map(Double.init)
     }
 
+    /// `frequency(of:)` for a word already lowercased and folded, without normalising it again.
+    func frequency(ofNormalized word: String) -> Double? {
+        lexicon[word].map(Double.init)
+    }
+
     /// Mean log-probability of the word's characters given the two before them, with the word
     /// padded at both ends. Higher is more plausible; unseen trigrams count as a fixed penalty.
     public func trigramScore(of word: String) -> Double {
