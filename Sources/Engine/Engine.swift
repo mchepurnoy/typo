@@ -53,6 +53,9 @@ public struct Engine: Sendable {
     /// The word just finished with Space and left alone, while the hotkey can still convert it
     /// (next event only).
     private var finished: (keys: [Key], layout: any Layout)?
+    /// The word before the current one, if it was left alone and only one Space separates them:
+    /// the next word's correction may take it along (`yt ghbdtn` → `не привет`).
+    private var previous: (keys: [Key], layout: any Layout)?
     private let detector: Detector
 
     private struct Revertible {
@@ -101,6 +104,8 @@ public struct Engine: Sendable {
         let justFinished = finished
         revertible = nil
         finished = nil
+        // Only word keys may come between the previous word and the next boundary
+        if case .key = event {} else if case .boundary = event {} else { previous = nil }
         switch event {
         case .key(let key):
             word.append(key)
@@ -141,12 +146,29 @@ public struct Engine: Sendable {
                 }
                 return .swallow([.erase(fix.original.count), .type(fix.replacement), .replayBoundary])
             }
-            guard let correction = layoutCorrection else {
+            let before = previous
+            previous = nil
+            guard var correction = layoutCorrection, let wordLayouts else {
                 streak = nil
-                if boundary == .space, let wordLayouts { finished = (word, wordLayouts.current) }
+                if boundary == .space, let wordLayouts {
+                    finished = (word, wordLayouts.current)
+                    previous = (word, wordLayouts.current)
+                }
                 return .pass
             }
-            let actions = correct(correction, activeLayoutID: layouts.current.id)
+            var alsoCorrected = 0
+            if let before,
+               let earlier = detector.retroactiveCorrection(
+                   for: before.keys, layouts: ActiveLayouts(current: before.layout, enabled: wordLayouts.enabled),
+                   targetLayoutID: correction.targetLayoutID, exceptions: settings.exceptions) {
+                correction = Correction(
+                    original: earlier.original + " " + correction.original,
+                    replacement: earlier.replacement + " " + correction.replacement,
+                    targetLayoutID: correction.targetLayoutID, typedWord: correction.typedWord,
+                    isKnownWord: correction.isKnownWord)
+                alsoCorrected = 1
+            }
+            let actions = correct(correction, activeLayoutID: layouts.current.id, alsoCorrected: alsoCorrected)
             // Only after Space is it known what the boundary left on screen: a replayed Return may
             // have sent a message, and Tab may have moved focus or inserted several spaces
             if boundary == .space {
@@ -173,8 +195,8 @@ public struct Engine: Sendable {
 
     /// The actions for a correction, switching the layout once enough of them point the same way
     /// and it is not active yet (asked again if an earlier switch did not take).
-    private mutating func correct(_ correction: Correction, activeLayoutID: String) -> [Action] {
-        let count = streak?.targetLayoutID == correction.targetLayoutID ? streak!.count + 1 : 1
+    private mutating func correct(_ correction: Correction, activeLayoutID: String, alsoCorrected: Int = 0) -> [Action] {
+        let count = (streak?.targetLayoutID == correction.targetLayoutID ? streak!.count + 1 : 1) + alsoCorrected
         streak = (correction.targetLayoutID, count)
         var actions: [Action] = [.erase(correction.original.count), .type(correction.replacement), .replayBoundary]
         if let threshold = settings.switchThreshold, count >= max(threshold, 1), activeLayoutID != correction.targetLayoutID {
@@ -270,6 +292,7 @@ public struct Engine: Sendable {
         streak = nil
         revertible = nil
         finished = nil
+        previous = nil
     }
 
     private mutating func forgetWord() {

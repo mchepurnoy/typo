@@ -51,6 +51,7 @@ struct RevertTests {
         var session = Session(settings: .init(exceptions: ["ghbdtn"]))
         #expect(session.word("ghbdtn") == .pass)
         session.engine.settings.exceptions.remove("ghbdtn")
+        _ = session.press(.reset(.mouse))
         #expect(session.word("ghbdtn") == .swallow([.erase(6), .type("привет"), .replayBoundary]))
     }
 

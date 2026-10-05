@@ -99,6 +99,27 @@ struct Detector {
         return best?.correction
     }
 
+    /// A word left alone earlier, re-read under `targetLayoutID` because the next word was just
+    /// corrected that way: accepted if it becomes a known word, more frequent than as typed
+    /// (`yt` → `не` before `ghbdtn` → `привет`).
+    func retroactiveCorrection(
+        for word: [Key], layouts: ActiveLayouts, targetLayoutID: String, exceptions: Set<String>
+    ) -> Correction? {
+        guard let targetLayout = layouts.enabled.first(where: { $0.id == targetLayoutID }),
+              let targetScript = targetLayout.language?.script,
+              let readings = readings(of: word, layouts: layouts, recent: [targetScript: targetLayoutID]),
+              !Self.isSkipped(readings.original),
+              !exceptions.contains(readings.typed.lowercased()),
+              let target = readings.targets.first(where: { $0.layoutID == targetLayoutID }),
+              let rereadFrequency = target.model.frequency(of: target.reread)
+        else { return nil }
+        let typedFrequency = readings.sourceModels.compactMap { $0.frequency(of: readings.typed) }.max()
+        guard rereadFrequency > typedFrequency ?? -.infinity else { return nil }
+        return Correction(
+            original: readings.original, replacement: target.replacement, targetLayoutID: targetLayoutID,
+            typedWord: readings.typed.lowercased())
+    }
+
     /// The word re-read under the other script's layout, whatever detection would say: for manual
     /// conversion and learned words. `nil` only when the word cannot be re-read (a dead key, no
     /// supported layout of another script).

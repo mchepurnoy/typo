@@ -41,6 +41,7 @@ Run in each app: TextEdit, Safari (a text field), Chrome (a text field), Termina
 | Check | TextEdit | Safari | Chrome | Terminal | Electron |
 | --- | --- | --- | --- | --- | --- |
 | `ghbdtn rfr ␣` on U.S. → `привет как `, and the menu-bar layout indicator switches to Russian after `rfr` | | | | | |
+| After a click, `yt ghbdtn␣` on U.S. → `не привет ` (the short word is fixed with the next one); ⌫ right after → `yt ghbdtn ` | | | | | |
 | `ghbdtn d␣` on U.S. → `привет в ` (the second correction, so the layout switches to Russian); `plan b␣` stays | | | | | |
 | `ghbdtn API rfr␣` → `привет API как`, and the layout does not switch | | | | | |
 | `,eltn␣` on U.S. → `будет ` (U.S. punctuation keys are Russian letters) | | | | | |

@@ -63,7 +63,11 @@ private func run(_ scenario: Scenario, spellChecker: (any SpellChecker)? = nil) 
         guard let keys = scenario.intendedOn.keysIfTypable(word) else { continue }
         for key in keys { _ = engine.handle(.key(key), layouts: layouts) }
         let response = engine.handle(.boundary(.space), layouts: layouts)
-        let corrected = response.actions.contains(.type(word))
+        // A retroactive correction types the previous word too: "не привет"
+        let corrected = response.actions.contains { action in
+            guard case .type(let text) = action else { return false }
+            return text == word || text.hasSuffix(" " + word)
+        }
         let right = scenario.isWrongLayout ? corrected : response == .pass
         tally.words += 1
         if word.count < 3 {
