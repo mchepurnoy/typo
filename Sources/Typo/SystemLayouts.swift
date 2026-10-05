@@ -91,6 +91,13 @@ final class SystemLayouts {
 
     private func keys(of layout: any Layout) -> [String: Key] {
         if let keys = keysByCharacter[layout.id] { return keys }
+        let keys = Self.keyMap(of: layout)
+        keysByCharacter[layout.id] = keys
+        return keys
+    }
+
+    /// The key typing each character `layout` types with one key press.
+    nonisolated static func keyMap(of layout: any Layout) -> [String: Key] {
         var keys: [String: Key] = [:]
         for shift in [true, false] {
             for code in KeyCode.wordKeyCodes {
@@ -100,7 +107,6 @@ final class SystemLayouts {
                 if !typed.isEmpty { keys[typed] = key }
             }
         }
-        keysByCharacter[layout.id] = keys
         return keys
     }
 
@@ -133,5 +139,21 @@ extension SystemLayouts {
     /// The enabled layouts, read the same way as for the Engine; for the settings window.
     static func enabled() -> [SystemLayout] {
         read().0.enabled.compactMap { $0 as? SystemLayout }
+    }
+
+    /// What `word`, as typed on one enabled layout, reads as on an enabled layout of another
+    /// script: "cegth" → "супер". For showing exceptions and learned words; `nil` if no layout
+    /// types the whole word.
+    static func conversion(of word: String, among layouts: [SystemLayout]) -> String? {
+        for source in layouts {
+            guard let script = source.language?.script,
+                  let target = layouts.first(where: { $0.language.map { $0.script != script } ?? false })
+            else { continue }
+            let keys = keyMap(of: source)
+            let typed = word.map { keys[String($0)] }
+            guard !typed.contains(where: { $0 == nil }) else { continue }
+            return typed.map { target.character(for: $0!) }.joined()
+        }
+        return nil
     }
 }

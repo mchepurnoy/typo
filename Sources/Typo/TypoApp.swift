@@ -24,8 +24,13 @@ private struct MenuBarIcon: View {
     let status: Status
     let settings: SettingsStore
 
+    private static let images = (
+        normal: MenuBarImage.make(.normal), flash: MenuBarImage.make(.flash), dimmed: MenuBarImage.make(.dimmed))
+
     var body: some View {
-        Image(systemName: settings.isPaused ? "pause.circle" : status.isFlashing ? "keyboard.fill" : "keyboard")
+        let image = settings.isPaused || !status.isRunning ? Self.images.dimmed
+            : status.isFlashing ? Self.images.flash : Self.images.normal
+        Image(nsImage: image)
     }
 }
 

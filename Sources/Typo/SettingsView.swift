@@ -61,12 +61,13 @@ private struct GeneralTab: View {
 private struct WordsTab: View {
     let settings: SettingsStore
     @State private var newException = ""
+    @State private var layouts: [SystemLayout] = []
 
     var body: some View {
         Form {
             Section {
                 ForEach(settings.exceptions.sorted(), id: \.self) { word in
-                    WordRow(word: word) { settings.removeException(word) }
+                    WordRow(word: word, conversion: conversion(of: word), isKept: true) { settings.removeException(word) }
                 }
                 HStack {
                     TextField("Add a word", text: $newException)
@@ -76,7 +77,7 @@ private struct WordsTab: View {
             } header: {
                 Text("Exceptions")
             } footer: {
-                Text("Never corrected. Backspace right after a correction adds the word here.")
+                Text("Kept as typed, never converted. Backspace right after a correction adds the word here.")
             }
 
             Section {
@@ -84,15 +85,20 @@ private struct WordsTab: View {
                     Text("None yet").foregroundStyle(.secondary)
                 }
                 ForEach(settings.learnedWords.sorted(), id: \.self) { word in
-                    WordRow(word: word) { settings.forgetLearnedWord(word) }
+                    WordRow(word: word, conversion: conversion(of: word), isKept: false) { settings.forgetLearnedWord(word) }
                 }
             } header: {
                 Text("Learned words")
             } footer: {
-                Text("Always corrected. Converting a word with the hotkey adds it here.")
+                Text("Always converted. Converting a word with the hotkey adds it here.")
             }
         }
         .formStyle(.grouped)
+        .onAppear { layouts = SystemLayouts.enabled() }
+    }
+
+    private func conversion(of word: String) -> String? {
+        SystemLayouts.conversion(of: word, among: layouts)
     }
 
     private func add() {
@@ -103,11 +109,21 @@ private struct WordsTab: View {
 
 private struct WordRow: View {
     let word: String
+    /// What the word reads as in the other script: "cegth → супер" for a learned word, struck
+    /// through for an exception (it stays as typed).
+    let conversion: String?
+    let isKept: Bool
     let remove: () -> Void
 
     var body: some View {
         HStack {
             Text(word)
+            if let conversion, isKept {
+                Text(conversion).strikethrough().foregroundStyle(.tertiary).help("Not converted to \(conversion)")
+            } else if let conversion {
+                Image(systemName: "arrow.right").foregroundStyle(.tertiary)
+                Text(conversion).foregroundStyle(.secondary)
+            }
             Spacer()
             Button(action: remove) { Image(systemName: "minus.circle") }
                 .buttonStyle(.borderless)
