@@ -31,7 +31,7 @@ struct LearnFromRetypingTests {
         session.type("cutythbhetv", with: us, on: onUS)
         #expect(session.press(.boundary(.space), on: onUS) == .pass)
         _ = session.press(.backspace, 12, on: onUS)
-        _ = session.press(.reset(.chord), on: onUS)  // ⌃Space switches the layout
+        _ = session.press(.reset(.layoutShortcut), on: onUS)  // ⌃Space switches the layout
         session.type("сгенерируем", with: russianPC, on: onRU)
         let response = session.press(.boundary(.space), on: onRU)
         #expect(response == Response(disposition: .pass, actions: [.recordLearnedWord("cutythbhetv")]))
@@ -59,6 +59,26 @@ struct LearnFromRetypingTests {
         session.type("cutythbhetv", with: us, on: onUS)
         #expect(session.press(.boundary(.space), on: onUS)
             == .swallow([.erase(11), .type("сгенерируем"), .replayBoundary]))
+    }
+
+    @Test("⌥⌫ erasing the word counts as erasing it")
+    func optionBackspace() {
+        var session = Session()
+        session.type("cutythbhetv", with: us, on: onUS)
+        _ = session.press(.boundary(.space), on: onUS)
+        _ = session.press(.deleteWord, on: onUS)
+        session.type("сгенерируем", with: russianPC, on: onRU)
+        #expect(session.press(.boundary(.space), on: onRU).actions == [.recordLearnedWord("cutythbhetv")])
+    }
+
+    @Test("Another shortcut in between (⌘V, ⌘Z) forgets the erased word")
+    func otherChord() {
+        var session = Session()
+        session.type("cuty", with: us, on: onUS)
+        _ = session.press(.backspace, 4, on: onUS)
+        _ = session.press(.reset(.chord), on: onUS)
+        session.type("сгенерируем", with: russianPC, on: onRU)
+        #expect(session.press(.boundary(.space), on: onRU) == .pass)
     }
 
     @Test("Nothing is learned for other keys, the same layout, a partial erase, or a click in between")

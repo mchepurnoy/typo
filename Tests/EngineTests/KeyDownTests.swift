@@ -28,10 +28,15 @@ struct KeyDownTests {
         #expect(InputEvent.keyDown(code: code, shift: false, chord: false) == .reset(.navigation))
     }
 
-    @Test("⌘/⌃/⌥ chords reset, even on letter keys")
+    @Test("⌘/⌃/⌥ chords reset, even on letter keys; with Space they switch the layout")
     func chords() {
         #expect(InputEvent.keyDown(code: 5, shift: false, chord: true) == .reset(.chord))
-        #expect(InputEvent.keyDown(code: 49, shift: false, chord: true) == .reset(.chord))
+        #expect(InputEvent.keyDown(code: 49, shift: false, chord: true) == .reset(.layoutShortcut))
+    }
+
+    @Test("⌥⌫ and ⌘⌫ delete a word")
+    func deleteWord() {
+        #expect(InputEvent.keyDown(code: 51, shift: false, chord: true) == .deleteWord)
     }
 }
 

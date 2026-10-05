@@ -144,12 +144,13 @@ extension SystemLayouts {
     /// What `word`, as typed on one enabled layout, reads as on an enabled layout of another
     /// script: "cegth" → "супер". For showing exceptions and learned words; `nil` if no layout
     /// types the whole word.
-    static func conversion(of word: String, among layouts: [SystemLayout]) -> String? {
+    /// - Parameter keyMaps: `keyMap(of:)` for each layout, by ID, computed once by the caller.
+    static func conversion(of word: String, among layouts: [SystemLayout], keyMaps: [String: [String: Key]]) -> String? {
         for source in layouts {
             guard let script = source.language?.script,
-                  let target = layouts.first(where: { $0.language.map { $0.script != script } ?? false })
+                  let target = layouts.first(where: { $0.language.map { $0.script != script } ?? false }),
+                  let keys = keyMaps[source.id]
             else { continue }
-            let keys = keyMap(of: source)
             let typed = word.map { keys[String($0)] }
             guard !typed.contains(where: { $0 == nil }) else { continue }
             return typed.map { target.character(for: $0!) }.joined()

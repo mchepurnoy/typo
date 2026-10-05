@@ -54,6 +54,39 @@ struct SpellingFixTests {
         #expect(engine.handle(.boundary(.space), layouts: layouts) == .pass)
     }
 
+    @Test("Abbreviations, commands and other languages' words are not 'fixed'", arguments: [
+        ("wget", us), ("thx", us), ("todo", us), ("async", us), ("nicht", us), ("bien", us),
+        ("кек", russianPC), ("шоб", russianPC),
+    ])
+    func notTypos(_ typed: String, _ layout: FixtureLayout) {
+        #expect(typo(typed, on: layout) == .pass)
+    }
+
+    /// Known limit: informal words one plausible slip from a frequent word look exactly like typos.
+    /// Backspace right after reverts the fix and keeps the word from then on.
+    @Test("Informal words that look like typos are fixed; Backspace is the way out", arguments: [
+        ("youre", "yours", us), ("прив", "прав", russianPC),
+    ])
+    func informalWordsLookLikeTypos(_ typed: String, _ fix: String, _ layout: FixtureLayout) {
+        #expect(typo(typed, on: layout) == fixed(typed, to: fix))
+    }
+
+    @Test("ё typed stays ё: пришёлл → пришёл")
+    func keepsYo() {
+        #expect(typo("пришёлл", on: russianPC) == fixed("пришёлл", to: "пришёл"))
+    }
+
+    @Test("No fixes in apps excluded from them (terminals, code editors)")
+    func excludedFromTypoFixes() {
+        var engine = Engine(
+            languageModels: BundledModels.all, spellChecker: KnownWordsSpellChecker { _ in false },
+            settings: .init(typoFixExcludedApps: ["com.apple.Terminal"]))
+        let layouts = ActiveLayouts(current: us, enabled: [us, russianPC])
+        _ = engine.handle(.appActivated("com.apple.Terminal"), layouts: layouts)
+        for key in us.keys(typing: "teh") { _ = engine.handle(.key(key), layouts: layouts) }
+        #expect(engine.handle(.boundary(.space), layouts: layouts) == .pass)
+    }
+
     @Test("When two fixes are about as likely, nothing is fixed: bost (most? best? post?)")
     func ambiguous() {
         #expect(typo("bost") == .pass)
@@ -110,16 +143,19 @@ struct SpellingFixAccuracyTests {
         return (try? String(contentsOf: url, encoding: .utf8))?.split(separator: "\n").map(String.init) ?? []
     }
 
-    /// Swaps two middle letters, or replaces one with the next letter of the alphabet, by position.
-    private static func injectTypo(_ word: String, index: Int) -> String {
-        var letters = Array(word)
-        let i = 1 + index % (letters.count - 2)
-        if index % 2 == 0, letters[i] != letters[i + 1] {
-            letters.swapAt(i, i + 1)
-        } else if let scalar = letters[i].unicodeScalars.first, let next = Unicode.Scalar(scalar.value + 1) {
-            letters[i] = Character(next)
+    /// A realistic slip, chosen by position: two middle letters swapped, or one key replaced by a
+    /// neighbouring key.
+    private static func injectTypo(_ word: String, index: Int, on layout: FixtureLayout) -> String {
+        guard var keys = layout.keysIfTypable(word) else { return word }
+        let i = 1 + index % (keys.count - 2)
+        if index % 2 == 0 {
+            keys.swapAt(i, i + 1)
+        } else {
+            let neighbours = KeyboardGeometry.neighbours(of: keys[i].code)
+            guard !neighbours.isEmpty else { return word }
+            keys[i] = Key(code: neighbours[index % neighbours.count], shift: false)
         }
-        return String(letters)
+        return keys.map(layout.character(for:)).joined()
     }
 
     @Test("Typos in held-out text are fixed right, and almost never wrong", arguments: [
@@ -135,8 +171,9 @@ struct SpellingFixAccuracyTests {
         let layouts = ActiveLayouts(current: layout, enabled: [us, russianPC])
         var tried = 0, right = 0, wrong: [String] = []
         for (index, word) in corpus.enumerated() where word.count >= 4 && word == word.lowercased() {
-            let typed = Self.injectTypo(word, index: index)
-            guard typed != word, !checker.known(typed), let keys = layout.keysIfTypable(typed) else { continue }
+            let typed = Self.injectTypo(word, index: index, on: layout)
+            guard typed != word, typed.allSatisfy(\.isLetter), !checker.known(typed),
+                  let keys = layout.keysIfTypable(typed) else { continue }
             tried += 1
             for key in keys { _ = engine.handle(.key(key), layouts: layouts) }
             let response = engine.handle(.boundary(.space), layouts: layouts)

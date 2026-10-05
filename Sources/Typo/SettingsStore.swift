@@ -121,10 +121,20 @@ final class SettingsStore {
         switchAfter = stored >= 1 ? stored : 2
     }
 
+    /// Terminals and code editors: their words are commands and identifiers, not misspellings, so
+    /// typos are not fixed there (layout corrections still are).
+    static let typoFixExcludedApps: Set<String> = [
+        "com.apple.Terminal", "com.googlecode.iterm2", "dev.warp.Warp-Stable", "net.kovidgoyal.kitty",
+        "com.mitchellh.ghostty", "org.alacritty", "com.github.wez.wezterm", "co.zeit.hyper",
+        "com.apple.dt.Xcode", "com.microsoft.VSCode", "com.microsoft.VSCodeInsiders", "com.todesktop.230313mzl4w4u92",
+        "dev.zed.Zed", "com.sublimetext.4", "com.panic.Nova", "com.jetbrains.intellij", "com.jetbrains.pycharm",
+        "com.jetbrains.WebStorm", "com.jetbrains.goland", "com.jetbrains.CLion", "com.google.android.studio",
+    ]
+
     var engineSettings: Engine.Settings {
         Engine.Settings(
             switchThreshold: switchThreshold, exceptions: exceptions, learnedWords: learnedWords, isPaused: isPaused,
-            excludedApps: excludedApps, fixesTypos: fixesTypos)
+            excludedApps: excludedApps, fixesTypos: fixesTypos, typoFixExcludedApps: Self.typoFixExcludedApps)
     }
 
     /// An exception is never learned at the same time, and the other way round.

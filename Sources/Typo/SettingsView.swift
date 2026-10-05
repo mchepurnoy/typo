@@ -63,6 +63,7 @@ private struct WordsTab: View {
     let settings: SettingsStore
     @State private var newException = ""
     @State private var layouts: [SystemLayout] = []
+    @State private var keyMaps: [String: [String: Key]] = [:]
 
     var body: some View {
         Form {
@@ -95,11 +96,14 @@ private struct WordsTab: View {
             }
         }
         .formStyle(.grouped)
-        .onAppear { layouts = SystemLayouts.enabled() }
+        .onAppear {
+            layouts = SystemLayouts.enabled()
+            keyMaps = Dictionary(uniqueKeysWithValues: layouts.map { ($0.id, SystemLayouts.keyMap(of: $0)) })
+        }
     }
 
     private func conversion(of word: String) -> String? {
-        SystemLayouts.conversion(of: word, among: layouts)
+        SystemLayouts.conversion(of: word, among: layouts, keyMaps: keyMaps)
     }
 
     private func add() {
@@ -190,6 +194,7 @@ private struct AppLabel: View {
 private struct LayoutsTab: View {
     let missingLanguages: [String]
     @State private var layouts: [SystemLayout] = []
+    @State private var keyMaps: [String: [String: Key]] = [:]
 
     /// Languages typo can judge right now: supported, with their data loaded.
     private func usable(_ language: Language?) -> Language? {

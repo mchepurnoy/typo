@@ -11,6 +11,8 @@ public enum InputEvent: Equatable, Sendable {
     case hotkey
     /// Another app became active (its bundle ID, if it has one); the word is forgotten.
     case appActivated(String?)
+    /// ⌥⌫ or ⌘⌫: the word to the left is deleted at once.
+    case deleteWord
 }
 
 public enum BoundaryKind: Equatable, Sendable {
@@ -23,6 +25,8 @@ public enum ResetReason: Equatable, Sendable {
     case mouse
     case navigation
     case chord
+    /// ⌃Space or ⌘Space, the usual shortcut to switch the layout.
+    case layoutShortcut
     /// Keys may have been typed that the Engine never saw (e.g. the event tap was disabled).
     case missedInput
     /// Secure input (a password field) is on: nothing is tracked until it is off.
@@ -33,7 +37,13 @@ extension InputEvent {
     /// Classifies a key-down by its macOS virtual keycode.
     /// - Parameter chord: whether ⌘, ⌃ or ⌥ was held.
     public static func keyDown(code: UInt16, shift: Bool, capsLock: Bool = false, chord: Bool) -> InputEvent {
-        if chord { return .reset(.chord) }
+        if chord {
+            switch code {
+            case KeyCode.space: return .reset(.layoutShortcut)
+            case KeyCode.delete: return .deleteWord
+            default: return .reset(.chord)
+            }
+        }
         switch code {
         case KeyCode.space: return .boundary(.space)
         case KeyCode.return, KeyCode.keypadEnter: return .boundary(.return)

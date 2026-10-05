@@ -130,12 +130,22 @@ struct Detector {
               let target = readings.targets.first(where: { $0.layoutID == targetLayoutID }),
               let rereadFrequency = target.model.frequency(of: target.reread)
         else { return nil }
+        // Only words detection left alone for lack of evidence: short words, and words no lexicon
+        // knows as typed. A real word of 3+ letters ("herb") stays, and a short known one needs a
+        // much more frequent reading
         let typedFrequency = readings.sourceModels.compactMap { $0.frequency(of: readings.typed) }.max()
-        guard rereadFrequency > typedFrequency ?? -.infinity else { return nil }
+        if let typedFrequency {
+            guard word.count <= Self.shortWordLength, rereadFrequency - typedFrequency >= Self.retroactiveLead
+            else { return nil }
+        }
         return Correction(
             original: readings.original, replacement: target.replacement, targetLayoutID: targetLayoutID,
             typedWord: readings.typed.lowercased())
     }
+
+    /// How much more frequent (Zipf) a short known word's other reading must be to be corrected
+    /// after the fact.
+    static let retroactiveLead = 1.0
 
     /// The word re-read under the other script's layout, whatever detection would say: for manual
     /// conversion and learned words. `nil` only when the word cannot be re-read (a dead key, no
@@ -150,10 +160,13 @@ struct Detector {
     }
 
     /// A misspelled word in the right layout, replaced with the intended word: the single most
-    /// frequent lexicon word one edit away (insert, delete, substitute, swap neighbours), when it is
-    /// clearly the best candidate. Only for lowercase words the spell checker explicitly calls
-    /// misspelled: inflected forms missing from the lexicon are real words, and capitalised words
-    /// are mostly names.
+    /// frequent lexicon word one plausible slip away, when it is clearly the best candidate.
+    /// Plausible slips: two letters swapped; a key replaced by a neighbouring key, or a vowel by a
+    /// vowel ("превет"); a letter missing; an extra letter that doubles or touches its neighbour.
+    /// Three-letter words only get swaps ("teh"). Only for lowercase words no bundled lexicon knows
+    /// and every enabled language's spell checker calls misspelled: inflected forms missing from
+    /// the lexicon are real words, other languages' words are not typos, and capitalised words are
+    /// mostly names.
     func spellingFix(for word: [Key], layouts: ActiveLayouts, exceptions: Set<String>) -> Correction? {
         guard let spellChecker,
               let readings = readings(of: word, layouts: layouts, recent: [:]),
@@ -162,16 +175,21 @@ struct Detector {
         else { return nil }
         let typed = readings.typed
         guard typed.count >= 3, typed.allSatisfy({ $0.isLetter && $0.isLowercase }),
-              !readings.sourceModels.contains(where: { $0.frequency(of: typed) != nil })
+              !models.values.contains(where: { $0.frequency(of: typed) != nil }),
+              !readings.sourceModels.isEmpty,
+              readings.sourceModels.allSatisfy({ spellChecker.isWord(typed, in: $0.language) == false })
         else { return nil }
-        let verdicts = readings.sourceModels.map { spellChecker.isWord(typed, in: $0.language) }
-        guard verdicts.contains(false), !verdicts.contains(true) else { return nil }
+
+        // The keys of the word itself, without the punctuation around it
+        let typedKeys = word.map(layouts.current.character(for:))
+        let keys = Array(word[Self.coreRange(typedKeys)])
+        guard keys.count == typed.count else { return nil }
 
         var candidates: [String: Double] = [:]
-        let normalized = LanguageModel.normalize(typed)
         for model in readings.sourceModels {
-            Self.forEachEdit(of: normalized, alphabet: Self.alphabet(model.language)) { edit in
-                if let frequency = model.frequency(ofNormalized: edit), frequency > candidates[edit] ?? -.infinity {
+            Self.forEachSlip(of: typed, keys: keys, layout: layouts.current, language: model.language) { edit in
+                if let frequency = model.frequency(ofNormalized: LanguageModel.normalize(edit)),
+                   frequency > candidates[edit] ?? -.infinity {
                     candidates[edit] = frequency
                 }
             }
@@ -203,32 +221,49 @@ struct Detector {
         }
     }
 
-    /// Calls `body` with every string one edit away from `word` (some more than once), building
-    /// each in a reused buffer.
-    private static func forEachEdit(of word: String, alphabet: [Character], _ body: (String) -> Void) {
+    /// Calls `body` with every plausible slip of `word` (some more than once), building each in a
+    /// reused buffer. `keys` are the word's keys, `layout` the one it was typed on. Edits work on
+    /// the letters as typed, so an "ё" the user typed survives the fix.
+    private static func forEachSlip(
+        of word: String, keys: [Key], layout: any Layout, language: Language, _ body: (String) -> Void
+    ) {
         let letters = Array(word)
+        let n = letters.count
         var buffer = letters
-        buffer.reserveCapacity(letters.count + 1)
-        for i in 0..<letters.count {
-            // delete
-            buffer.remove(at: i)
+        buffer.reserveCapacity(n + 1)
+        // swap neighbours
+        for i in 0..<(n - 1) where letters[i] != letters[i + 1] {
+            buffer.swapAt(i, i + 1)
             body(String(buffer))
-            buffer.insert(letters[i], at: i)
-            // substitute
-            for letter in alphabet where letter != letters[i] {
+            buffer.swapAt(i, i + 1)
+        }
+        guard n >= 4 else { return }
+        let vowels = Self.vowels(language)
+        for i in 0..<n {
+            // substitute: a neighbouring key, or a vowel for a vowel
+            var replacements = Set(KeyboardGeometry.neighbours(of: keys[i].code).compactMap { code in
+                layout.character(for: Key(code: code, shift: false)).first
+            })
+            if vowels.contains(letters[i]) { replacements.formUnion(vowels) }
+            replacements.remove(letters[i])
+            for letter in replacements where letter.isLetter {
                 buffer[i] = letter
                 body(String(buffer))
             }
             buffer[i] = letters[i]
-            // swap neighbours
-            if i + 1 < letters.count, letters[i] != letters[i + 1] {
-                buffer.swapAt(i, i + 1)
+            // delete an extra letter that doubles or touches its neighbour, never the first
+            let doubles = (i > 0 && letters[i - 1] == letters[i]) || (i + 1 < n && letters[i + 1] == letters[i])
+            let touches = (i > 0 && KeyboardGeometry.areNeighbours(keys[i].code, keys[i - 1].code))
+                || (i + 1 < n && KeyboardGeometry.areNeighbours(keys[i].code, keys[i + 1].code))
+            if i > 0, doubles || (touches && i < n - 1) {
+                buffer.remove(at: i)
                 body(String(buffer))
-                buffer.swapAt(i, i + 1)
+                buffer.insert(letters[i], at: i)
             }
         }
-        // insert
-        for i in 0...letters.count {
+        // insert a missing letter, inside the word
+        let alphabet = Self.alphabet(language)
+        for i in 1..<n {
             buffer.insert(" ", at: i)
             for letter in alphabet {
                 buffer[i] = letter
@@ -244,6 +279,15 @@ struct Detector {
         case .russian: Array("абвгдежзийклмнопрстуфхцчшщъыьэюя")
         case .german: Array("abcdefghijklmnopqrstuvwxyzäöüß")
         case .spanish: Array("abcdefghijklmnopqrstuvwxyzáéíóúüñ")
+        }
+    }
+
+    private static func vowels(_ language: Language) -> Set<Character> {
+        switch language {
+        case .english: Set("aeiouy")
+        case .russian: Set("аеёиоуыэюя")
+        case .german: Set("aeiouyäöü")
+        case .spanish: Set("aeiouáéíóúü")
         }
     }
 
@@ -343,10 +387,14 @@ struct Detector {
     /// The per-key characters joined, without the punctuation keys at either end: "it." is judged
     /// as "it", and "code," re-read from "сщвуб" as "code".
     private static func core(_ keys: [String]) -> String {
+        keys[coreRange(keys)].joined()
+    }
+
+    private static func coreRange(_ keys: [String]) -> Range<Int> {
         var range = keys.indices
         while let first = range.first, surroundingPunctuation.contains(keys[first]) { range = range.dropFirst() }
         while let last = range.last, surroundingPunctuation.contains(keys[last]) { range = range.dropLast() }
-        return keys[range].joined()
+        return range
     }
 
     /// A skipped word looks technical and is never corrected automatically: it contains a digit,

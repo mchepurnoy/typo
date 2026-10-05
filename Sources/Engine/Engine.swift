@@ -18,12 +18,17 @@ public struct Engine: Sendable {
         public var excludedApps: Set<String>
         /// Whether a misspelled word in the right layout is replaced with the intended word.
         public var fixesTypos: Bool
+        /// Bundle IDs of apps where typos are never fixed (terminals, code editors: commands and
+        /// identifiers are not misspellings), though layout corrections still happen.
+        public var typoFixExcludedApps: Set<String>
 
         public init(
             switchThreshold: Int? = 2, exceptions: Set<String> = [], learnedWords: Set<String> = [],
-            isPaused: Bool = false, excludedApps: Set<String> = [], fixesTypos: Bool = true
+            isPaused: Bool = false, excludedApps: Set<String> = [], fixesTypos: Bool = true,
+            typoFixExcludedApps: Set<String> = []
         ) {
             self.fixesTypos = fixesTypos
+            self.typoFixExcludedApps = typoFixExcludedApps
             self.switchThreshold = switchThreshold
             self.exceptions = exceptions
             self.learnedWords = learnedWords
@@ -153,9 +158,15 @@ public struct Engine: Sendable {
             return .pass
         case .reset(let reason):
             // ⌃Space or ⌘Space, the usual way to switch the layout, must not forget an erased word
-            let keep = reason == .chord ? erased : nil
+            let keep = reason == .layoutShortcut ? erased : nil
             forgetAll()
             erased = keep
+            return .pass
+        case .deleteWord:
+            // The word typed, or the one finished just before, is gone at once
+            let gone = !word.isEmpty ? wordLayout.map { (word, $0) } : erasing.map { ($0.keys, $0.layout) }
+            forgetAll()
+            erased = gone
             return .pass
         case .appActivated:
             forgetAll()
@@ -170,12 +181,16 @@ public struct Engine: Sendable {
             erased = nil
             erasing = nil
             abandoning = nil
+            // The word before only counts if exactly one Space and this word's keys follow it
+            let before = previous
+            previous = nil
             guard !word.isEmpty else { return .pass }
             let wordLayouts = trackedWordLayouts(layouts)
             let layoutCorrection = wordLayouts.flatMap(correction)
             // A word with a typo can look like gibberish typed in the wrong layout ("весх" → "dtc["):
             // a confident spelling fix beats a conversion into a word only the trigrams vouch for
             if let wordLayouts, settings.fixesTypos, layoutCorrection?.isKnownWord != true,
+               activeApp.map(settings.typoFixExcludedApps.contains) != true,
                let fix = detector.spellingFix(for: word, layouts: wordLayouts, exceptions: settings.exceptions) {
                 streak = nil
                 if boundary == .space {
@@ -183,8 +198,6 @@ public struct Engine: Sendable {
                 }
                 return .swallow([.erase(fix.original.count), .type(fix.replacement), .replayBoundary])
             }
-            let before = previous
-            previous = nil
             guard var correction = layoutCorrection, let wordLayouts else {
                 streak = nil
                 guard let wordLayouts else { return .pass }
@@ -201,10 +214,12 @@ public struct Engine: Sendable {
                let earlier = detector.retroactiveCorrection(
                    for: before.keys, layouts: ActiveLayouts(current: before.layout, enabled: wordLayouts.enabled),
                    targetLayoutID: correction.targetLayoutID, exceptions: settings.exceptions) {
+                // Reverting it keeps the earlier word as typed: that is the guess Backspace rejects,
+                // while the word detection converted on its own stays correctable
                 correction = Correction(
                     original: earlier.original + " " + correction.original,
                     replacement: earlier.replacement + " " + correction.replacement,
-                    targetLayoutID: correction.targetLayoutID, typedWord: correction.typedWord,
+                    targetLayoutID: correction.targetLayoutID, typedWord: earlier.typedWord,
                     isKnownWord: correction.isKnownWord)
                 alsoCorrected = 1
             }

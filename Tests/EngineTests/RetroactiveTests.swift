@@ -72,13 +72,36 @@ struct RetroactiveTests {
         #expect(session.word("ghbdtn") == .swallow([.erase(6), .type("привет"), .replayBoundary]))
     }
 
-    @Test("Backspace right after restores both words")
+    @Test("Backspace right after restores both words and keeps the earlier one as typed from now on")
     func revert() {
         var session = Session()
         _ = session.word("yt")
         _ = session.word("ghbdtn")
         #expect(session.press(.backspace)
-            == .swallow([.erase(10), .type("yt ghbdtn"), .pressBoundary(.space), .recordException("ghbdtn")]))
+            == .swallow([.erase(10), .type("yt ghbdtn"), .pressBoundary(.space), .recordException("yt")]))
+    }
+
+    @Test("Two spaces, or a fixed typo, between the words prevent it")
+    func notExactlyOneSpace() {
+        var spaces = Session()
+        _ = spaces.word("yt")
+        _ = spaces.press(.boundary(.space))
+        #expect(spaces.word("ghbdtn") == .swallow([.erase(6), .type("привет"), .replayBoundary]))
+
+        var typo = Session()
+        typo.engine = Engine(
+            languageModels: BundledModels.all, spellChecker: KnownWordsSpellChecker { _ in false },
+            settings: .init(switchThreshold: nil))
+        _ = typo.word("yt")
+        _ = typo.word("teh")
+        #expect(typo.word("ghbdtn") == .swallow([.erase(6), .type("привет"), .replayBoundary]))
+    }
+
+    @Test("A real word of 3+ letters is not converted after the fact: herb ghbdtn")
+    func knownLongerWordStays() {
+        var session = Session()
+        _ = session.word("herb")
+        #expect(session.word("ghbdtn") == .swallow([.erase(6), .type("привет"), .replayBoundary]))
     }
 
     @Test("Only the word right before is looked at: z yt ghbdtn → z не привет")
