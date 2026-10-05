@@ -55,8 +55,11 @@ private struct AcceptsOtherScript: SpellChecker {
     func forgetWords() {}
 }
 
+/// Set TYPO_RULES_ONLY=1 to run the accuracy tests without the trained detector model, for comparison.
+private let usesModel = ProcessInfo.processInfo.environment["TYPO_RULES_ONLY"] == nil
+
 private func run(_ scenario: Scenario, spellChecker: (any SpellChecker)? = nil) -> Tally {
-    var engine = Engine(languageModels: BundledModels.all, spellChecker: spellChecker)
+    var engine = Engine(languageModels: BundledModels.all, spellChecker: spellChecker, usesDetectorModel: usesModel)
     let layouts = ActiveLayouts(current: scenario.typedOn, enabled: scenario.enabled)
     var tally = Tally()
     for word in corpus(scenario.language) {

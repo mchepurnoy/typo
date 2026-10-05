@@ -86,8 +86,14 @@ public struct Engine: Sendable {
     /// - Parameters:
     ///   - languageModels: one per supported language; languages without one never take part.
     ///   - spellChecker: an optional cross-check that can confirm words, never decide alone.
-    public init(languageModels: [LanguageModel], spellChecker: (any SpellChecker)? = nil, settings: Settings = .init()) {
-        detector = Detector(models: languageModels, spellChecker: spellChecker)
+    ///   - usesDetectorModel: decide 4+ letter words the lexicon does not know with the trained
+    ///     model rather than the hand-set margins (post-MVP 04: higher recall, same false
+    ///     corrections on held-out text). `false` keeps the rules alone.
+    public init(
+        languageModels: [LanguageModel], spellChecker: (any SpellChecker)? = nil, settings: Settings = .init(),
+        usesDetectorModel: Bool = true
+    ) {
+        detector = Detector(models: languageModels, spellChecker: spellChecker, model: usesDetectorModel ? .trained : nil)
         self.settings = settings
     }
 

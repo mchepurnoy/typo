@@ -93,12 +93,13 @@ struct SpellCheckTests {
 
     @Test("A re-reading the spell checker knows needs less trigram evidence: автошколы")
     func rereadingConfirmedBySpellChecker() {
-        // Missed without the spell checker: not in the lexicon and only modestly more plausible
-        var withoutChecker = Engine(languageModels: BundledModels.all)
+        // Missed by the rules without the spell checker: not in the lexicon and only modestly more
+        // plausible (the trained model would catch it; this test is about the rules' spell path)
+        var withoutChecker = Engine(languageModels: BundledModels.all, usesDetectorModel: false)
         #expect(press("автошколы", intendedOn: russianPC, typedOn: us, engine: &withoutChecker) == .pass)
 
         let checker = FakeSpellChecker { word, language in language == .russian && word == "автошколы" ? true : nil }
-        var engine = Engine(languageModels: BundledModels.all, spellChecker: checker)
+        var engine = Engine(languageModels: BundledModels.all, spellChecker: checker, usesDetectorModel: false)
         #expect(press("автошколы", intendedOn: russianPC, typedOn: us, engine: &engine)
             == .swallow([.erase(9), .type("автошколы"), .replayBoundary]))
     }

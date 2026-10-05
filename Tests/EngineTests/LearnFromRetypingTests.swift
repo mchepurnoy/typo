@@ -6,8 +6,10 @@ private let russianPC = FixtureLayout.russianPC
 private let onUS = ActiveLayouts(current: us, enabled: [us, russianPC])
 private let onRU = ActiveLayouts(current: russianPC, enabled: [us, russianPC])
 
+/// The rules alone, which miss "cutythbhetv" ("сгенерируем" on U.S.); the model would not, and these
+/// tests are about learning, not detection.
 private struct Session {
-    var engine = Engine(languageModels: BundledModels.all, settings: .init(switchThreshold: nil))
+    var engine = Engine(languageModels: BundledModels.all, settings: .init(switchThreshold: nil), usesDetectorModel: false)
 
     mutating func type(_ text: String, with keysOf: FixtureLayout, on layouts: ActiveLayouts) {
         for key in keysOf.keys(typing: text) { _ = engine.handle(.key(key), layouts: layouts) }

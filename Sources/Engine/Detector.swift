@@ -42,10 +42,13 @@ struct Detector {
 
     let models: [Language: LanguageModel]
     let spellChecker: (any SpellChecker)?
+    /// Decides re-readings of 3+ letters instead of the hand-set margins, when given.
+    let model: DetectorModel?
 
-    init(models: [LanguageModel], spellChecker: (any SpellChecker)? = nil) {
+    init(models: [LanguageModel], spellChecker: (any SpellChecker)? = nil, model: DetectorModel? = nil) {
         self.models = Dictionary(models.map { ($0.language, $0) }, uniquingKeysWith: { first, _ in first })
         self.spellChecker = spellChecker
+        self.model = model
     }
 
     /// - Parameters:
@@ -72,7 +75,7 @@ struct Detector {
             // Only the lexicon makes a re-reading known; the spell checker can merely lower the bar
             let judgement = Judgement(of: target.reread, in: target.model, spellChecker: nil)
             if typedKnown && !judgement.isKnown { continue }
-            let margin = judgement.plausibility - typedPlausibility
+            var margin = judgement.plausibility - typedPlausibility
             let accepted: Bool
             if word.count <= Self.shortWordLength {
                 // A short word is too ambiguous to judge alone ("plan b"): only right after a
@@ -82,6 +85,20 @@ struct Detector {
             } else if target.reread.count <= Self.shortWordLength {
                 // A longer word that would become a short one inside punctuation: "(yt)" is not "(не)"
                 accepted = false
+            } else if let model, !typedKnown, target.reread.count >= 4 {
+                // The model decides words of 4+ letters the lexicon does not know as typed; between
+                // two known words, and for 3-letter words, the rules stay in charge (the model's few
+                // extra false corrections on held-out text were all there: "кал", "NBD")
+                let features = DetectorModel.features(
+                    typedTrigram: typedJudgements.map(\.trigramScore).max()!, rereadTrigram: judgement.trigramScore,
+                    typedFrequency: typedJudgements.compactMap(\.frequency).max(), rereadFrequency: judgement.frequency,
+                    keyCount: word.count, rereadNonLetters: target.reread.filter { !$0.isLetter }.count)
+                let probability = model.probability(features)
+                let spellConfirmed = !judgement.isKnown
+                    && Self.spellConfirms(target.reread, in: target.model.language, spellChecker)
+                    && margin > Self.spellConfirmedMargin && judgement.trigramScore > Self.unknownFloor
+                accepted = probability >= model.threshold || spellConfirmed
+                margin = probability
             } else if judgement.isKnown {
                 accepted = margin > Self.knownMargin
             } else {
