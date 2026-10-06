@@ -13,6 +13,9 @@ public enum InputEvent: Equatable, Sendable {
     case appActivated(String?)
     /// ⌥⌫ or ⌘⌫: the word to the left is deleted at once.
     case deleteWord
+    /// Focus moved into (`true`) or out of (`false`) a password field. In one, typo tracks and
+    /// changes nothing, even when the app does not turn on secure input.
+    case passwordField(Bool)
 }
 
 public enum BoundaryKind: Equatable, Sendable {

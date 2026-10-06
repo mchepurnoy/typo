@@ -115,7 +115,11 @@ Type as fast as you can, without pausing at the spaces. Nothing may be lost, dup
 ## Password fields
 
 - [ ] In a Safari login form's password field, typing `ghbdtn␣` is not corrected
+- [ ] The same in Chrome, in an Electron app's login (e.g. Slack), and in a native app's password field (System Settings → Users & Groups → change password)
+- [ ] In a password field, double Shift does nothing and nothing is learned
+- [ ] Tab from the user name into the password field and type `ghbdtn⏎` at once: not corrected
 - [ ] After leaving the password field, `ghbdtn␣` in a normal field is corrected again
+- [ ] Terminal: `sudo -v`, then type a password like `ghbdtn⏎` without Secure Keyboard Entry: it may be corrected (known limit, see README). With Terminal → Secure Keyboard Entry on, nothing is corrected anywhere in Terminal
 
 ## Localization
 

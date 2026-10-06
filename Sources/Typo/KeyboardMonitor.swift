@@ -33,6 +33,7 @@ final class KeyboardMonitor {
     private var engine: Engine
     private let settings: SettingsStore
     private let layouts = SystemLayouts()
+    private let passwordFields = PasswordFieldWatcher()
     private let eventSource = CGEventSource(stateID: .privateState)
     private let log = Logger(subsystem: "app.typo.Typo", category: "tap")
     private var tap: CFMachPort?
@@ -72,12 +73,17 @@ final class KeyboardMonitor {
         }
         RunLoop.main.add(secureInputCheck, forMode: .common)
 
+        passwordFields.onChange = { [weak self] focused in self?.send(.passwordField(focused)) }
+
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
         ) { [weak self] notification in
             let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
             let bundleID = app?.bundleIdentifier
-            MainActor.assumeIsolated { self?.send(.appActivated(bundleID)) }
+            MainActor.assumeIsolated {
+                self?.send(.appActivated(bundleID))
+                self?.passwordFields.checkSoon()
+            }
         }
         send(.appActivated(NSWorkspace.shared.frontmostApplication?.bundleIdentifier))
     }
@@ -153,6 +159,7 @@ final class KeyboardMonitor {
         case .leftMouseDown, .rightMouseDown, .otherMouseDown:
             doubleTap.otherInput()
             send(.reset(.mouse))
+            passwordFields.checkSoon()
             return true
         case .keyDown where awaitedFence != nil, .keyUp where awaitedFence != nil,
              .flagsChanged where awaitedFence != nil:
@@ -180,8 +187,11 @@ final class KeyboardMonitor {
         }
         layouts.syncCurrent()
         let flags = event.flags
+        let code = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
+        // Tab and Return can move focus into or out of a password field
+        if code == KeyCode.tab || code == KeyCode.return || code == KeyCode.keypadEnter { passwordFields.checkSoon() }
         let input = InputEvent.keyDown(
-            code: UInt16(event.getIntegerValueField(.keyboardEventKeycode)),
+            code: code,
             shift: flags.contains(.maskShift),
             capsLock: flags.contains(.maskAlphaShift),
             chord: !flags.isDisjoint(with: [.maskCommand, .maskControl, .maskAlternate]))

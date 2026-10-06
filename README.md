@@ -59,6 +59,12 @@ scripts/build-language-models.py
 
 Sources, licence, attribution and the file format are in [`LanguageModels/SOURCES.md`](LanguageModels/SOURCES.md). The accuracy test runs held-out news text through the Engine (`Tests/EngineTests/Accuracy/`, regenerate with `scripts/build-accuracy-corpus.py`).
 
+## Password fields
+
+Typo never touches what you type into a password field. Most of them turn on macOS secure input, which hides every key from typo. For those that do not, typo asks Accessibility whether the focused field is a password field (right after Tab, Return, a click or an app switch, and four times a second) and stays silent there: no corrections, no conversions, no learning, nothing remembered.
+
+One case it cannot see: a password prompt in a terminal (`sudo`, `ssh`), which is plain text to macOS. Spelling fixes are already off in terminals, but a password typed in the wrong layout could be converted on Return. Turn on **Terminal → Secure Keyboard Entry** (iTerm2: **iTerm2 → Secure Keyboard Entry**), or add the terminal to Settings → Excluded Apps.
+
 ## Privacy
 
 typo sees every key you press. What you type is kept in memory only for the current word and is never written to disk, logs or the network ([ADR 0003](docs/adr/0003-never-store-typed-text.md)).

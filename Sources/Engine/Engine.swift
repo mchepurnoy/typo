@@ -47,6 +47,8 @@ public struct Engine: Sendable {
     private var wordLayout: (any Layout)?
     /// The bundle ID of the active app, as last reported.
     private var activeApp: String?
+    /// A password field has focus.
+    private var inPasswordField = false
     /// Whether the previous event found typo inactive, so the state is cleared once on the way in.
     private var wasInactive: Bool?
     /// The most recently active layout per script: the target when several layouts share a script.
@@ -102,13 +104,18 @@ public struct Engine: Sendable {
         self.settings = settings
     }
 
-    /// Whether typo is off right now: paused, or an excluded app is active.
+    /// Whether typo is off right now: paused, an excluded app is active, or a password field has focus.
     public var isInactive: Bool {
-        settings.isPaused || activeApp.map(settings.excludedApps.contains) == true
+        settings.isPaused || inPasswordField || activeApp.map(settings.excludedApps.contains) == true
     }
 
     public mutating func handle(_ event: InputEvent, layouts: ActiveLayouts) -> Response {
         if case .appActivated(let app) = event { activeApp = app }
+        if case .passwordField(let focused) = event {
+            inPasswordField = focused
+            // Whatever comes next is unrelated to what came before the field
+            forgetAll()
+        }
         if let script = layouts.current.language?.script {
             recentLayouts[script] = layouts.current.id
         }
@@ -168,7 +175,7 @@ public struct Engine: Sendable {
             forgetAll()
             erased = gone
             return .pass
-        case .appActivated:
+        case .appActivated, .passwordField:
             forgetAll()
             return .pass
         case .hotkey:
