@@ -117,6 +117,11 @@ Type as fast as you can, without pausing at the spaces. Nothing may be lost, dup
 - [ ] In a Safari login form's password field, typing `ghbdtn␣` is not corrected
 - [ ] After leaving the password field, `ghbdtn␣` in a normal field is corrected again
 
+## Localization
+
+- [ ] With macOS set to Russian (or `defaults write app.typo.Typo AppleLanguages '("ru")'` and relaunch), the menu, the "Set Up Typo" window, every Settings tab and About Typo are fully in Russian; with English, fully in English
+- [ ] Settings → General shows "После 1 исправления подряд" / "После 2 исправлений подряд" as the stepper changes
+
 ## Privacy
 
 - [ ] Console.app filtered on process `Typo` shows nothing you typed

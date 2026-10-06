@@ -16,7 +16,7 @@ final class OnboardingWindow {
         if window == nil {
             let window = NSWindow(
                 contentRect: .zero, styleMask: [.titled, .closable], backing: .buffered, defer: false)
-            window.title = "Set Up Typo"
+            window.title = String(localized: "Set Up Typo")
             window.isReleasedWhenClosed = false
             let content = NSHostingView(rootView: OnboardingView(permissions: permissions) { [weak self] in
                 self?.window?.close()
@@ -61,10 +61,10 @@ private struct OnboardingView: View {
                 action: permissions.requestInputMonitoring)
 
             Text(permissions.allGranted
-                 ? "Typo is working. You can close this window."
+                 ? LocalizedStringKey("Typo is working. You can close this window.")
                  : permissions.accessibility
-                 ? "Typo is running. If it does not correct anything, allow Input Monitoring too."
-                 : "Typo starts working as soon as Accessibility is allowed; there is no need to relaunch it.")
+                 ? LocalizedStringKey("Typo is running. If it does not correct anything, allow Input Monitoring too.")
+                 : LocalizedStringKey("Typo starts working as soon as Accessibility is allowed; there is no need to relaunch it."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
 
@@ -80,8 +80,8 @@ private struct OnboardingView: View {
 }
 
 private struct PermissionRow: View {
-    let title: String
-    let reason: String
+    let title: LocalizedStringKey
+    let reason: LocalizedStringKey
     let granted: Bool
     let action: () -> Void
 

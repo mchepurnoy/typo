@@ -36,6 +36,10 @@ The build is ad-hoc signed and not notarized (that needs a paid Developer ID, ti
 
 `Support/AppIcon.svg` is the source; `scripts/build-icon.sh` renders `Support/AppIcon.icns` from it with the system SVG renderer. Re-run it after editing the SVG.
 
+## Interface languages
+
+The interface is in English and Russian and follows the system language. Translations live in `scripts/localizations.py`, which writes the String Catalog `Sources/Typo/Resources/Localizable.xcstrings`; `build-app.sh` compiles it into the app. After adding or changing an interface string, add its translation there and run the script. `LocalizationTests` fails on any interface string without a Russian translation, and on unused keys.
+
 ## Test
 
 ```sh

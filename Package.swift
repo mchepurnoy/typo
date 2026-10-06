@@ -3,6 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "Typo",
+    defaultLocalization: "en",
     platforms: [.macOS(.v14)],
     products: [
         .executable(name: "Typo", targets: ["Typo"]),
@@ -12,7 +13,8 @@ let package = Package(
         // Pure Swift: no AppKit, Carbon or CoreGraphics. The only unit-tested module.
         .target(name: "Engine"),
         // Thin macOS adapter and app shell, verified by docs/qa-checklist.md.
-        .executableTarget(name: "Typo", dependencies: ["Engine"]),
+        // Resources/Localizable.xcstrings is compiled into the app bundle by scripts/build-app.sh
+        .executableTarget(name: "Typo", dependencies: ["Engine"], exclude: ["Resources"]),
         .testTarget(name: "EngineTests", dependencies: ["Engine"], exclude: ["Accuracy"]),
     ]
 )

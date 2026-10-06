@@ -45,9 +45,7 @@ private struct GeneralTab: View {
 
             Toggle("Switch the keyboard layout automatically", isOn: $settings.switchesLayout)
             if settings.switchesLayout {
-                Stepper(
-                    "After \(settings.switchAfter) correction\(settings.switchAfter == 1 ? "" : "s") in a row",
-                    value: $settings.switchAfter, in: 1...5)
+                Stepper("After \(settings.switchAfter) corrections in a row", value: $settings.switchAfter, in: 1...5)
                 Text("macOS's \"Automatically switch to a document's input source\" can undo the switch; turn it off in Keyboard settings.")
                     .font(.caption).foregroundStyle(.secondary)
             }
@@ -192,6 +190,10 @@ private struct AppLabel: View {
 }
 
 private struct LayoutsTab: View {
+    private static var supportedLanguages: String {
+        Language.allCases.map(\.displayName).formatted(.list(type: .and))
+    }
+
     let missingLanguages: [String]
     @State private var layouts: [SystemLayout] = []
     @State private var keyMaps: [String: [String: Key]] = [:]
@@ -224,7 +226,7 @@ private struct LayoutsTab: View {
                         .foregroundStyle(.orange)
                 }
             } footer: {
-                Text("Typo corrects between supported layouts of different scripts (Latin ↔ Cyrillic). Supported languages: \(Language.allCases.map(\.displayName).formatted(.list(type: .and))).")
+                Text("Typo corrects between supported layouts of different scripts (Latin ↔ Cyrillic). Supported languages: \(Self.supportedLanguages).")
             }
         }
         .formStyle(.grouped)
@@ -239,10 +241,10 @@ private struct LayoutsTab: View {
 extension SettingsStore.Hotkey {
     var displayName: String {
         switch self {
-        case .shift: "Shift"
-        case .option: "Option"
-        case .control: "Control"
-        case .command: "Command"
+        case .shift: String(localized: "Shift")
+        case .option: String(localized: "Option")
+        case .control: String(localized: "Control")
+        case .command: String(localized: "Command")
         }
     }
 }
@@ -250,10 +252,10 @@ extension SettingsStore.Hotkey {
 extension Language {
     var displayName: String {
         switch self {
-        case .english: "English"
-        case .russian: "Russian"
-        case .german: "German"
-        case .spanish: "Spanish"
+        case .english: String(localized: "English")
+        case .russian: String(localized: "Russian")
+        case .german: String(localized: "German")
+        case .spanish: String(localized: "Spanish")
         }
     }
 }

@@ -1,0 +1,658 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "About Typo": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "О программе Typo"
+          }
+        }
+      }
+    },
+    "Accessibility": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Универсальный доступ"
+          }
+        }
+      }
+    },
+    "Accessibility permission was turned off.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разрешение «Универсальный доступ» было выключено."
+          }
+        }
+      }
+    },
+    "Add": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Добавить"
+          }
+        }
+      }
+    },
+    "Add App…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Добавить приложение…"
+          }
+        }
+      }
+    },
+    "Add a word": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Добавить слово"
+          }
+        }
+      }
+    },
+    "After %lld corrections in a row": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "After %lld correction in a row"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "After %lld corrections in a row"
+                }
+              }
+            }
+          }
+        },
+        "ru": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "После %lld исправления подряд"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "После %lld исправлений подряд"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "После %lld исправлений подряд"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "После %lld исправления подряд"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Allow Typo in System Settings → General → Login Items.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разрешите Typo в Системных настройках → Основные → Объекты входа."
+          }
+        }
+      }
+    },
+    "Allowed": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Разрешено"
+          }
+        }
+      }
+    },
+    "Always converted. Converting a word with the hotkey adds it here.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Переводятся всегда. Перевод слова горячей клавишей добавляет его сюда."
+          }
+        }
+      }
+    },
+    "Command": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Command"
+          }
+        }
+      }
+    },
+    "Control": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Control"
+          }
+        }
+      }
+    },
+    "Convert the last word": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Перевести последнее слово"
+          }
+        }
+      }
+    },
+    "Done": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Готово"
+          }
+        }
+      }
+    },
+    "Double-tap %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Двойное нажатие %@"
+          }
+        }
+      }
+    },
+    "English": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "английский"
+          }
+        }
+      }
+    },
+    "Exceptions": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Исключения"
+          }
+        }
+      }
+    },
+    "Excluded Apps": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Исключённые приложения"
+          }
+        }
+      }
+    },
+    "Fix typos in the right layout (teh → the)": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Исправлять опечатки в правильной раскладке (превет → привет)"
+          }
+        }
+      }
+    },
+    "Free software under the GNU GPL v3 (GPL-3.0-only).\n\nLanguage data derived from the Leipzig Corpora Collection (eng_news_2024_1M, rus_news_2024_1M, deu_news_2024_1M, spa_news_2024_1M), Universität Leipzig, wortschatz.uni-leipzig.de, licensed under CC BY. Changes: lowercased, ё folded to е, reduced to trigram statistics and a frequency list.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Свободная программа под лицензией GNU GPL v3 (GPL-3.0-only).\n\nЯзыковые данные получены из Leipzig Corpora Collection (eng_news_2024_1M, rus_news_2024_1M, deu_news_2024_1M, spa_news_2024_1M), Universität Leipzig, wortschatz.uni-leipzig.de, лицензия CC BY. Изменения: приведены к нижнему регистру, ё заменена на е, сведены к статистике триграмм и частотному словарю."
+          }
+        }
+      }
+    },
+    "General": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Основные"
+          }
+        }
+      }
+    },
+    "German": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "немецкий"
+          }
+        }
+      }
+    },
+    "Input Monitoring": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мониторинг ввода"
+          }
+        }
+      }
+    },
+    "Input Monitoring is off: Typo may not see what you type.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мониторинг ввода выключен: Typo может не видеть, что вы печатаете."
+          }
+        }
+      }
+    },
+    "Kept as typed, never converted. Backspace right after a correction adds the word here.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Остаются как набраны и никогда не переводятся. Backspace сразу после исправления добавляет слово сюда."
+          }
+        }
+      }
+    },
+    "Language data missing": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нет языковых данных"
+          }
+        }
+      }
+    },
+    "Language data missing: %@. Reinstall Typo.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нет языковых данных: %@. Переустановите Typo."
+          }
+        }
+      }
+    },
+    "Launch at login": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открывать при входе в систему"
+          }
+        }
+      }
+    },
+    "Layouts": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Раскладки"
+          }
+        }
+      }
+    },
+    "Learned words": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выученные слова"
+          }
+        }
+      }
+    },
+    "Lets Typo replace a mistyped word and switch the layout.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Позволяет Typo заменить слово, набранное не в той раскладке, и переключить раскладку."
+          }
+        }
+      }
+    },
+    "Lets Typo see the keys you type, to notice a word in the wrong layout.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Позволяет Typo видеть нажатые клавиши, чтобы заметить слово в неправильной раскладке."
+          }
+        }
+      }
+    },
+    "None yet": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Пока нет"
+          }
+        }
+      }
+    },
+    "Not converted to %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не переводится в «%@»"
+          }
+        }
+      }
+    },
+    "Not supported": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не поддерживается"
+          }
+        }
+      }
+    },
+    "Nothing to correct: enable a supported layout of another script, e.g. Russian – PC next to U.S.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Нечего исправлять: включите поддерживаемую раскладку с другим алфавитом, например «Русская – ПК» вместе с U.S."
+          }
+        }
+      }
+    },
+    "Open System Settings…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Открыть Системные настройки…"
+          }
+        }
+      }
+    },
+    "Option": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Option"
+          }
+        }
+      }
+    },
+    "Pause Typo": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Приостановить Typo"
+          }
+        }
+      }
+    },
+    "Play a sound on each correction": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Звук при каждом исправлении"
+          }
+        }
+      }
+    },
+    "Quit Typo": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Завершить Typo"
+          }
+        }
+      }
+    },
+    "Remove": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Удалить"
+          }
+        }
+      }
+    },
+    "Russian": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "русский"
+          }
+        }
+      }
+    },
+    "Set Up Permissions…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Настроить разрешения…"
+          }
+        }
+      }
+    },
+    "Set Up Typo": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Настройка Typo"
+          }
+        }
+      }
+    },
+    "Settings…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Настройки…"
+          }
+        }
+      }
+    },
+    "Shift": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shift"
+          }
+        }
+      }
+    },
+    "Spanish": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "испанский"
+          }
+        }
+      }
+    },
+    "Switch the keyboard layout automatically": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Переключать раскладку автоматически"
+          }
+        }
+      }
+    },
+    "To do that it needs two permissions. What you type stays on this Mac: it is never stored, logged or sent anywhere.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Для этого нужны два разрешения. То, что вы печатаете, остаётся на этом Mac: оно нигде не сохраняется, не записывается в журналы и никуда не отправляется."
+          }
+        }
+      }
+    },
+    "Typo cannot watch the keyboard. Remove Typo from Privacy & Security → Accessibility and add it again.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Typo не может следить за клавиатурой. Удалите Typo из «Конфиденциальность и безопасность» → «Универсальный доступ» и добавьте снова."
+          }
+        }
+      }
+    },
+    "Typo corrects between supported layouts of different scripts (Latin ↔ Cyrillic). Supported languages: %@.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Typo исправляет между поддерживаемыми раскладками с разными алфавитами (латиница ↔ кириллица). Поддерживаемые языки: %@."
+          }
+        }
+      }
+    },
+    "Typo fixes words typed in the wrong keyboard layout, like ghbdtn → привет.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Typo исправляет слова, набранные не в той раскладке: ghbdtn → привет."
+          }
+        }
+      }
+    },
+    "Typo ignores these apps entirely.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В этих приложениях Typo ничего не делает."
+          }
+        }
+      }
+    },
+    "Typo is running. If it does not correct anything, allow Input Monitoring too.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Typo запущен. Если он ничего не исправляет, разрешите также мониторинг ввода."
+          }
+        }
+      }
+    },
+    "Typo is working. You can close this window.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Typo работает. Это окно можно закрыть."
+          }
+        }
+      }
+    },
+    "Typo starts working as soon as Accessibility is allowed; there is no need to relaunch it.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Typo начнёт работать, как только будет разрешён универсальный доступ; перезапускать не нужно."
+          }
+        }
+      }
+    },
+    "Typo works in every app.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Typo работает во всех приложениях."
+          }
+        }
+      }
+    },
+    "Waiting for Accessibility permission…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ожидание разрешения «Универсальный доступ»…"
+          }
+        }
+      }
+    },
+    "Words": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Слова"
+          }
+        }
+      }
+    },
+    "macOS's \"Automatically switch to a document's input source\" can undo the switch; turn it off in Keyboard settings.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Настройка macOS «Автоматически переключаться на источник ввода документа» может отменить переключение; выключите её в настройках клавиатуры."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

@@ -41,7 +41,9 @@ private struct MenuContent: View {
     var body: some View {
         let status = delegate.status
         if !status.missingLanguages.isEmpty {
-            Text("Language data missing: \(status.missingLanguages.joined(separator: ", ")). Reinstall Typo.")
+            let names = status.missingLanguages.compactMap(Language.init(rawValue:)).map(\.displayName)
+                .formatted(.list(type: .and))
+            Text("Language data missing: \(names). Reinstall Typo.")
         }
         if let problem = status.problem {
             Text(problem)
@@ -137,13 +139,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// The standard About panel, with the attribution the CC BY language data requires.
     func showAbout() {
-        let credits = """
+        let credits = String(localized: """
             Free software under the GNU GPL v3 (GPL-3.0-only).
 
             Language data derived from the Leipzig Corpora Collection (eng_news_2024_1M, rus_news_2024_1M, \
             deu_news_2024_1M, spa_news_2024_1M), Universität Leipzig, wortschatz.uni-leipzig.de, licensed under \
             CC BY. Changes: lowercased, ё folded to е, reduced to trigram statistics and a frequency list.
-            """
+            """)
         let style = NSMutableParagraphStyle()
         style.alignment = .center
         NSApp.activate()
@@ -172,11 +174,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let started = monitor.isRunning || monitor.start()
             if started { wasTrusted = true }
             status.problem = started
-                ? (permissions.inputMonitoring ? nil : "Input Monitoring is off: Typo may not see what you type.")
-                : "Typo cannot watch the keyboard. Remove Typo from Privacy & Security → Accessibility and add it again."
+                ? (permissions.inputMonitoring ? nil : String(localized: "Input Monitoring is off: Typo may not see what you type."))
+                : String(localized: "Typo cannot watch the keyboard. Remove Typo from Privacy & Security → Accessibility and add it again.")
         } else {
             if monitor.isRunning { monitor.stop() }
-            status.problem = wasTrusted ? "Accessibility permission was turned off." : "Waiting for Accessibility permission…"
+            status.problem = wasTrusted
+                ? String(localized: "Accessibility permission was turned off.")
+                : String(localized: "Waiting for Accessibility permission…")
         }
         status.isRunning = monitor.isRunning
     }
