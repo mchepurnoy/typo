@@ -56,8 +56,13 @@ final class KeyboardMonitor {
     var onRewrite: (() -> Void)?
     private var isBackingOff = false
 
-    init(languageModels: [LanguageModel], spellChecker: (any SpellChecker)?, settings: SettingsStore) {
-        engine = Engine(languageModels: languageModels, spellChecker: spellChecker, settings: Self.engineSettings(settings.engineSettings))
+    init(
+        languageModels: [LanguageModel], accentTables: [AccentTable], spellChecker: (any SpellChecker)?,
+        settings: SettingsStore
+    ) {
+        engine = Engine(
+            languageModels: languageModels, spellChecker: spellChecker, accentTables: accentTables,
+            settings: Self.engineSettings(settings.engineSettings))
         self.settings = settings
         settings.onChange = { [weak self] in
             self?.engine.settings = Self.engineSettings($0)

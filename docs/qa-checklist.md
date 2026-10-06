@@ -73,6 +73,17 @@ Run in each app: TextEdit, Safari (a text field), Chrome (a text field), Termina
 | A rare real word (`агентствах`, a name like `Кузьменков`) is left alone | | | | | |
 | Settings → General → "Fix typos" off: `teh␣` stays | | | | | |
 
+## ё, umlauts and accents
+
+| Check | TextEdit | Safari | Chrome | Terminal | Electron |
+| --- | --- | --- | --- | --- | --- |
+| On Russian – PC: `еще␣` → `ещё `, `Елка␣` → `Ёлка `; `все␣`, `осел␣` stay | | | | | |
+| On U.S. with German enabled: `konnen␣` → `können `; `schon␣` stays; `fur␣` stays (English) | | | | | |
+| On U.S. with Spanish enabled: `tambien␣` → `también `; `esta␣`, `como␣` stay | | | | | |
+| `tot␣` on U.S. (wrong layout) → `ещё ` | | | | | |
+| ⌫ right after `еще␣` → `ещё` back to `еще `, and `еще` is left alone from then on | | | | | |
+| Settings → General → "Add ё, umlauts and accents" off: `еще␣` stays | | | | | |
+
 ## Fast typing
 
 Type as fast as you can, without pausing at the spaces. Nothing may be lost, duplicated or reordered.

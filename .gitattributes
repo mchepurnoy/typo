@@ -1,1 +1,2 @@
 LanguageModels/*.lm -text -diff linguist-generated
+LanguageModels/*.accents -text -diff linguist-generated

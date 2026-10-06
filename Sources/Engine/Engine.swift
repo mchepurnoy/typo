@@ -18,15 +18,18 @@ public struct Engine: Sendable {
         public var excludedApps: Set<String>
         /// Whether a misspelled word in the right layout is replaced with the intended word.
         public var fixesTypos: Bool
-        /// Bundle IDs of apps where typos are never fixed (terminals, code editors: commands and
-        /// identifiers are not misspellings), though layout corrections still happen.
+        /// Bundle IDs of apps where typos are never fixed and accents never restored (terminals,
+        /// code editors: commands and identifiers), though layout corrections still happen.
         public var typoFixExcludedApps: Set<String>
+        /// Whether a certain ё, umlaut or accent the user left out is restored ("еще" → "ещё").
+        public var restoresAccents: Bool
 
         public init(
             switchThreshold: Int? = 2, exceptions: Set<String> = [], learnedWords: Set<String> = [],
             isPaused: Bool = false, excludedApps: Set<String> = [], fixesTypos: Bool = true,
-            typoFixExcludedApps: Set<String> = []
+            typoFixExcludedApps: Set<String> = [], restoresAccents: Bool = true
         ) {
+            self.restoresAccents = restoresAccents
             self.fixesTypos = fixesTypos
             self.typoFixExcludedApps = typoFixExcludedApps
             self.switchThreshold = switchThreshold
@@ -96,11 +99,14 @@ public struct Engine: Sendable {
     ///   - usesDetectorModel: decide 4+ letter words the lexicon does not know with the trained
     ///     model rather than the hand-set margins (post-MVP 04: higher recall, same false
     ///     corrections on held-out text). `false` keeps the rules alone.
+    ///   - accentTables: words whose ё, umlauts or accents can be restored, per language.
     public init(
-        languageModels: [LanguageModel], spellChecker: (any SpellChecker)? = nil, settings: Settings = .init(),
-        usesDetectorModel: Bool = true
+        languageModels: [LanguageModel], spellChecker: (any SpellChecker)? = nil, accentTables: [AccentTable] = [],
+        settings: Settings = .init(), usesDetectorModel: Bool = true
     ) {
-        detector = Detector(models: languageModels, spellChecker: spellChecker, model: usesDetectorModel ? .trained : nil)
+        detector = Detector(
+            models: languageModels, spellChecker: spellChecker, model: usesDetectorModel ? .trained : nil,
+            accentTables: accentTables)
         self.settings = settings
     }
 
@@ -194,10 +200,20 @@ public struct Engine: Sendable {
             guard !word.isEmpty else { return .pass }
             let wordLayouts = trackedWordLayouts(layouts)
             let layoutCorrection = wordLayouts.flatMap(correction)
+            let quietApp = activeApp.map(settings.typoFixExcludedApps.contains) == true
+            // Typed in the right layout, but without a ё, umlaut or accent it certainly takes
+            if let wordLayouts, layoutCorrection == nil, settings.restoresAccents, !quietApp,
+               let restoration = detector.accentRestoration(for: word, layouts: wordLayouts, exceptions: settings.exceptions) {
+                streak = nil
+                if boundary == .space {
+                    revertible = Revertible(correction: restoration, isManual: false, boundary: boundary, switchedFrom: nil)
+                }
+                return .swallow([.erase(restoration.original.count), .type(restoration.replacement), .replayBoundary])
+            }
             // A word with a typo can look like gibberish typed in the wrong layout ("весх" → "dtc["):
             // a confident spelling fix beats a conversion into a word only the trigrams vouch for
             if let wordLayouts, settings.fixesTypos, layoutCorrection?.isKnownWord != true,
-               activeApp.map(settings.typoFixExcludedApps.contains) != true,
+               !quietApp,
                let fix = detector.spellingFix(for: word, layouts: wordLayouts, exceptions: settings.exceptions) {
                 streak = nil
                 if boundary == .space {
@@ -205,7 +221,9 @@ public struct Engine: Sendable {
                 }
                 return .swallow([.erase(fix.original.count), .type(fix.replacement), .replayBoundary])
             }
-            guard var correction = layoutCorrection, let wordLayouts else {
+            guard var correction = layoutCorrection.map({ accented($0, quietApp: quietApp, layouts: layouts) }),
+                  let wordLayouts
+            else {
                 streak = nil
                 guard let wordLayouts else { return .pass }
                 if boundary == .space {
@@ -220,7 +238,8 @@ public struct Engine: Sendable {
             if let before,
                let earlier = detector.retroactiveCorrection(
                    for: before.keys, layouts: ActiveLayouts(current: before.layout, enabled: wordLayouts.enabled),
-                   targetLayoutID: correction.targetLayoutID, exceptions: settings.exceptions) {
+                   targetLayoutID: correction.targetLayoutID, exceptions: settings.exceptions)
+                   .map({ accented($0, quietApp: quietApp, layouts: layouts) }) {
                 // Reverting it keeps the earlier word as typed: that is the guess Backspace rejects,
                 // while the word detection converted on its own stays correctable
                 correction = Correction(
@@ -258,6 +277,19 @@ public struct Engine: Sendable {
         return [.recordLearnedWord(conversion.typedWord)]
     }
 
+    /// The correction with a certain ё, umlaut or accent of its target language restored in the
+    /// replacement: re-readings come out without them.
+    private func accented(_ correction: Correction, quietApp: Bool, layouts: ActiveLayouts) -> Correction {
+        guard settings.restoresAccents, !quietApp,
+              let language = layouts.enabled.first(where: { $0.id == correction.targetLayoutID })?.language
+        else { return correction }
+        return Correction(
+            original: correction.original,
+            replacement: detector.restoringAccents(in: correction.replacement, language: language),
+            targetLayoutID: correction.targetLayoutID, typedWord: correction.typedWord,
+            isKnownWord: correction.isKnownWord)
+    }
+
     /// A learned word is converted whatever detection says; anything else is up to the detector.
     private func correction(_ layouts: ActiveLayouts) -> Correction? {
         if !settings.learnedWords.isEmpty,
@@ -285,7 +317,7 @@ public struct Engine: Sendable {
     /// Converts the word being typed, or else the word just finished, to the other script, switches
     /// to that script's layout, and learns the word.
     private mutating func convertManually(_ layouts: ActiveLayouts, finished: (keys: [Key], layout: any Layout)?) -> [Action] {
-        let correction: Correction
+        var correction: Correction
         let boundary: BoundaryKind?
         var wordBefore: (layout: any Layout, keyScripts: [Script?])?
         if !word.isEmpty {
@@ -307,6 +339,7 @@ public struct Engine: Sendable {
             return []
         }
 
+        correction = accented(correction, quietApp: false, layouts: layouts)
         streak = nil
         let switched = layouts.current.id != correction.targetLayoutID
         revertible = Revertible(

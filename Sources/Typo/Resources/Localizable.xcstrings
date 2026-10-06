@@ -61,6 +61,16 @@
         }
       }
     },
+    "Add ё, umlauts and accents where certain (еще → ещё, konnen → können)": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Расставлять ё, умлауты и акценты, где это однозначно (еще → ещё, konnen → können)"
+          }
+        }
+      }
+    },
     "After %lld corrections in a row": {
       "localizations": {
         "en": {
@@ -233,12 +243,12 @@
         }
       }
     },
-    "Free software under the GNU GPL v3 (GPL-3.0-only).\n\nLanguage data derived from the Leipzig Corpora Collection (eng_news_2024_1M, rus_news_2024_1M, deu_news_2024_1M, spa_news_2024_1M), Universität Leipzig, wortschatz.uni-leipzig.de, licensed under CC BY. Changes: lowercased, ё folded to е, reduced to trigram statistics and a frequency list.": {
+    "Free software under the GNU GPL v3 (GPL-3.0-only).\n\nLanguage data derived from the Leipzig Corpora Collection (eng_news_2024_1M, rus_news_2024_1M, deu_news_2024_1M, spa_news_2024_1M), Universität Leipzig, wortschatz.uni-leipzig.de, licensed under CC BY. Changes: lowercased, ё folded to е, reduced to trigram statistics and a frequency list.\n\nWords that take ё from eyo-kernel by Denis Seleznev (MIT License).": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Свободная программа под лицензией GNU GPL v3 (GPL-3.0-only).\n\nЯзыковые данные получены из Leipzig Corpora Collection (eng_news_2024_1M, rus_news_2024_1M, deu_news_2024_1M, spa_news_2024_1M), Universität Leipzig, wortschatz.uni-leipzig.de, лицензия CC BY. Изменения: приведены к нижнему регистру, ё заменена на е, сведены к статистике триграмм и частотному словарю."
+            "value": "Свободная программа под лицензией GNU GPL v3 (GPL-3.0-only).\n\nЯзыковые данные получены из Leipzig Corpora Collection (eng_news_2024_1M, rus_news_2024_1M, deu_news_2024_1M, spa_news_2024_1M), Universität Leipzig, wortschatz.uni-leipzig.de, лицензия CC BY. Изменения: приведены к нижнему регистру, ё заменена на е, сведены к статистике триграмм и частотному словарю.\n\nСлова с буквой ё — из eyo-kernel Дениса Селезнёва (лицензия MIT)."
           }
         }
       }

@@ -18,7 +18,7 @@ pkill -x Typo 2>/dev/null || true
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/Typo" "$APP/Contents/MacOS/Typo"
-cp LanguageModels/*.lm Support/AppIcon.icns "$APP/Contents/Resources/"
+cp LanguageModels/*.lm LanguageModels/*.accents Support/AppIcon.icns "$APP/Contents/Resources/"
 # Interface strings: en.lproj and ru.lproj from the String Catalog
 xcrun xcstringstool compile Sources/Typo/Resources/Localizable.xcstrings --output-directory "$APP/Contents/Resources"
 cp Support/Info.plist "$APP/Contents/Info.plist"

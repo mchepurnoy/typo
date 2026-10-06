@@ -44,11 +44,49 @@ struct Detector {
     let spellChecker: (any SpellChecker)?
     /// Decides re-readings of 3+ letters instead of the hand-set margins, when given.
     let model: DetectorModel?
+    let accentTables: [Language: AccentTable]
 
-    init(models: [LanguageModel], spellChecker: (any SpellChecker)? = nil, model: DetectorModel? = nil) {
+    init(
+        models: [LanguageModel], spellChecker: (any SpellChecker)? = nil, model: DetectorModel? = nil,
+        accentTables: [AccentTable] = []
+    ) {
         self.models = Dictionary(models.map { ($0.language, $0) }, uniquingKeysWith: { first, _ in first })
         self.spellChecker = spellChecker
         self.model = model
+        self.accentTables = Dictionary(accentTables.map { ($0.language, $0) }, uniquingKeysWith: { first, _ in first })
+    }
+
+    /// `text`, a word that may have punctuation around it, with a certain ё, umlaut or accent of
+    /// `language` restored: for re-readings, which come out without them ("tot" → "еще" → "ещё").
+    func restoringAccents(in text: String, language: Language) -> String {
+        guard let table = accentTables[language] else { return text }
+        let keys = text.map(String.init)
+        let range = Self.coreRange(keys)
+        guard !range.isEmpty, let restored = table.restoration(of: keys[range].joined()) else { return text }
+        return keys[..<range.lowerBound].joined() + restored + keys[range.upperBound...].joined()
+    }
+
+    /// The word with a certain ё, umlaut or accent restored ("еще" → "ещё", "konnen" → "können"),
+    /// in a language of the enabled layouts of its script. Left alone if another enabled language
+    /// knows the word as typed ("fur" with English enabled).
+    func accentRestoration(for word: [Key], layouts: ActiveLayouts, exceptions: Set<String>) -> Correction? {
+        guard let readings = readings(of: word, layouts: layouts, recent: [:]),
+              !Self.isSkipped(readings.original),
+              !exceptions.contains(readings.typed.lowercased()),
+              readings.typed.allSatisfy(\.isLetter)
+        else { return nil }
+        let typed = readings.typed
+        for model in readings.sourceModels {
+            guard let table = accentTables[model.language], let restored = table.restoration(of: typed) else { continue }
+            let othersKnow = readings.sourceModels.contains { $0.language != model.language && $0.frequency(of: typed) != nil }
+            guard !othersKnow, let range = readings.original.firstRange(of: typed) else { continue }
+            var replacement = readings.original
+            replacement.replaceSubrange(range, with: restored)
+            return Correction(
+                original: readings.original, replacement: replacement, targetLayoutID: layouts.current.id,
+                typedWord: typed.lowercased())
+        }
+        return nil
     }
 
     /// - Parameters:

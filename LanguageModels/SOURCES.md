@@ -55,3 +55,12 @@ How the numbers are made (see the script for the exact constants):
 - Words are lowercased, Russian `ё` is folded to `е` and `’` to `'`. Only words made of the language's letters are kept, with `-` (and `'` in English) allowed between letters (`из-за`, `don't`); digits, other punctuation and other scripts drop out. Forms seen fewer than 3 times are ignored.
 - **Trigrams**: each word type is padded with a space at both ends and weighted by `ln(1 + count)`, so frequent function words do not dominate. Trigrams with a total weight below 2 are dropped. Each value is `ln(weight(abc) / weight(ab·))`.
 - **Lexicon**: the 60,000 most frequent word forms.
+
+## Accent tables (`ru.accents`, `de.accents`, `es.accents`)
+
+Words typed without ё, umlauts or accents that typo restores ("еще" → "ещё", "konnen" → "können"), built by `scripts/build-accent-tables.py`:
+
+- **Russian**: the `dictionary/safe.txt` list of [eyo-kernel](https://github.com/hcodes/eyo-kernel) at commit `95577df` (SHA-256 `11fc6d9c3cc6d0fff6a21cd642fa6aecbf3f9eb784f84ccd78141f32e51e0693`), words that certainly take ё; its "not safe" list (все/всё, осел/осёл) is not used. **License: MIT, Copyright (c) 2026 Denis Seleznev**; the full notice is in [`LICENSE-eyo-kernel.txt`](LICENSE-eyo-kernel.txt) and must ship with the data. eyo-kernel says its dictionary was originally taken from [php-yoficator](https://github.com/rin-nas/php-yoficator), which states no license (chosen knowingly, 2026-10-06). Changes: endings expanded into forms, lowercased, and only forms that occur in `rus_news_2024_1M` kept (8,641 of ~107k).
+- **German, Spanish**: from `deu_news_2024_1M` and `spa_news_2024_1M` (Leipzig, CC BY, see above). A form is listed only if its plain spelling occurs at most 1% as often as the marked one in the corpus, so pairs that are both words (schon/schön, esta/está) are left out; forms with ß are left out.
+
+Format: `typo-accents<TAB>1`, `language`, `source`, `words` (count), then `plain<TAB>restored<TAB>rule` lines, where rule `a` restores in any case, `l` only lowercase, `c` only capitalised.

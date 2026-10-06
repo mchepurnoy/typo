@@ -51,6 +51,7 @@ private struct GeneralTab: View {
             }
 
             Toggle("Fix typos in the right layout (teh → the)", isOn: $settings.fixesTypos)
+            Toggle("Add ё, umlauts and accents where certain (еще → ещё, konnen → können)", isOn: $settings.restoresAccents)
             Toggle("Play a sound on each correction", isOn: $settings.playsSound)
         }
         .formStyle(.grouped)

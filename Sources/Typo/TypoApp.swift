@@ -121,12 +121,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         Task {
             // Parsing ~4 MB of model text stays off the main thread
-            let models = await Task.detached(priority: .userInitiated) { Self.loadLanguageModels() }.value
+            let (models, accents) = await Task.detached(priority: .userInitiated) {
+                (Self.loadLanguageModels(), Self.loadAccentTables())
+            }.value
             let loaded = Set(models.map(\.language))
             status.missingLanguages = Language.allCases.filter { !loaded.contains($0) }.map(\.rawValue)
             let spellChecker = SystemSpellChecker()
             spellChecker.warmUp()
-            let monitor = KeyboardMonitor(languageModels: models, spellChecker: spellChecker, settings: settings)
+            let monitor = KeyboardMonitor(
+                languageModels: models, accentTables: accents, spellChecker: spellChecker, settings: settings)
             monitor.onRewrite = { [weak self] in self?.correctionFeedback() }
             self.monitor = monitor
             syncWithPermissions()
@@ -145,6 +148,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Language data derived from the Leipzig Corpora Collection (eng_news_2024_1M, rus_news_2024_1M, \
             deu_news_2024_1M, spa_news_2024_1M), Universität Leipzig, wortschatz.uni-leipzig.de, licensed under \
             CC BY. Changes: lowercased, ё folded to е, reduced to trigram statistics and a frequency list.
+
+            Words that take ё from eyo-kernel by Denis Seleznev (MIT License).
             """)
         let style = NSMutableParagraphStyle()
         style.alignment = .center
@@ -183,6 +188,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 : String(localized: "Waiting for Accessibility permission…")
         }
         status.isRunning = monitor.isRunning
+    }
+
+    /// The bundled accent tables (Contents/Resources/<code>.accents); missing ones are logged and
+    /// skipped (their ё, umlauts or accents are simply not restored).
+    nonisolated private static func loadAccentTables() -> [AccentTable] {
+        Language.allCases.compactMap { language in
+            guard let url = Bundle.main.url(forResource: language.rawValue, withExtension: "accents") else { return nil }
+            do {
+                let table = try AccentTable(parsing: String(contentsOf: url, encoding: .utf8))
+                return table.language == language ? table : nil
+            } catch {
+                Logger(subsystem: "app.typo.Typo", category: "launch")
+                    .error("accent table \(language.rawValue, privacy: .public) not loaded: \(error, privacy: .public)")
+                return nil
+            }
+        }
     }
 
     /// The bundled language models (Contents/Resources/<code>.lm). Missing or mislabelled ones are

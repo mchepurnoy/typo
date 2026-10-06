@@ -18,14 +18,16 @@ CREDITS_EN = (
     "Free software under the GNU GPL v3 (GPL-3.0-only).\n\n"
     "Language data derived from the Leipzig Corpora Collection (eng_news_2024_1M, rus_news_2024_1M, "
     "deu_news_2024_1M, spa_news_2024_1M), Universität Leipzig, wortschatz.uni-leipzig.de, licensed under "
-    "CC BY. Changes: lowercased, ё folded to е, reduced to trigram statistics and a frequency list."
+    "CC BY. Changes: lowercased, ё folded to е, reduced to trigram statistics and a frequency list.\n\n"
+    "Words that take ё from eyo-kernel by Denis Seleznev (MIT License)."
 )
 CREDITS_RU = (
     "Свободная программа под лицензией GNU GPL v3 (GPL-3.0-only).\n\n"
     "Языковые данные получены из Leipzig Corpora Collection (eng_news_2024_1M, rus_news_2024_1M, "
     "deu_news_2024_1M, spa_news_2024_1M), Universität Leipzig, wortschatz.uni-leipzig.de, лицензия "
     "CC BY. Изменения: приведены к нижнему регистру, ё заменена на е, сведены к статистике триграмм "
-    "и частотному словарю."
+    "и частотному словарю.\n\n"
+    "Слова с буквой ё — из eyo-kernel Дениса Селезнёва (лицензия MIT)."
 )
 
 TRANSLATIONS = {
@@ -85,6 +87,8 @@ TRANSLATIONS = {
         "Настройка macOS «Автоматически переключаться на источник ввода документа» может отменить "
         "переключение; выключите её в настройках клавиатуры.",
     "Fix typos in the right layout (teh → the)": "Исправлять опечатки в правильной раскладке (превет → привет)",
+    "Add ё, umlauts and accents where certain (еще → ещё, konnen → können)":
+        "Расставлять ё, умлауты и акценты, где это однозначно (еще → ещё, konnen → können)",
     "Play a sound on each correction": "Звук при каждом исправлении",
     # Settings: Words
     "Add a word": "Добавить слово",

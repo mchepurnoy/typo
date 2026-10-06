@@ -57,7 +57,7 @@ Detection uses one language model per supported language (English, Russian, Germ
 scripts/build-language-models.py
 ```
 
-Sources, licence, attribution and the file format are in [`LanguageModels/SOURCES.md`](LanguageModels/SOURCES.md). The accuracy test runs held-out news text through the Engine (`Tests/EngineTests/Accuracy/`, regenerate with `scripts/build-accuracy-corpus.py`).
+Next to them, `<code>.accents` tables list words whose ё, umlauts or accents typo restores when they are left out ("еще" → "ещё", "konnen" → "können"); rebuild with `scripts/build-accent-tables.py`. Sources, licences, attribution and the file formats are in [`LanguageModels/SOURCES.md`](LanguageModels/SOURCES.md). The accuracy test runs held-out news text through the Engine (`Tests/EngineTests/Accuracy/`, regenerate with `scripts/build-accuracy-corpus.py`).
 
 ## Password fields
 
