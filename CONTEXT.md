@@ -62,3 +62,7 @@ _Avoid_: blacklist
 
 **Pause**:
 A global off switch that stops all corrections until resumed: in the menu bar, or with a shortcut (⌃⌘ pressed together and released, by default; the user can change or clear it), e.g. to type a password and resume.
+
+**Statistics**:
+Per-day counts of the words typo fixed and an estimate of the time that saved, kept for 8 weeks and shown for today, 7 and 30 days; never the words themselves.
+_Avoid_: analytics, telemetry (nothing leaves the Mac)
