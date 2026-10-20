@@ -67,6 +67,24 @@ public struct Statistics: Equatable, Sendable {
         }
     }
 
+    /// Time saved as shown: seconds below a minute, minutes below an hour, hours and minutes above,
+    /// rounded to the nearest. An estimate deserves no more precision.
+    public enum TimeSaved: Equatable, Sendable {
+        case seconds(Int)
+        case minutes(Int)
+        case hours(Int, minutes: Int)
+
+        public init(seconds: Double) {
+            let seconds = max(0, seconds)
+            guard seconds.rounded() >= 60 else {
+                self = .seconds(Int(seconds.rounded()))
+                return
+            }
+            let minutes = Int((seconds / 60).rounded())
+            self = minutes < 60 ? .minutes(minutes) : .hours(minutes / 60, minutes: minutes % 60)
+        }
+    }
+
     /// Whether rewrites are counted. Turning it off deletes every day.
     public var isKept: Bool {
         didSet { if !isKept { days.removeAll() } }

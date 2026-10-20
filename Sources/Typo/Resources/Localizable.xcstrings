@@ -1,6 +1,26 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "30 days": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 дней"
+          }
+        }
+      }
+    },
+    "7 days": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7 дней"
+          }
+        }
+      }
+    },
     "About Typo": {
       "localizations": {
         "ru": {
@@ -313,6 +333,16 @@
         }
       }
     },
+    "Keep statistics": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вести статистику"
+          }
+        }
+      }
+    },
     "Kept as typed, never converted. Backspace right after a correction adds the word here.": {
       "localizations": {
         "ru": {
@@ -443,6 +473,16 @@
         }
       }
     },
+    "Only daily counts, never the words, kept on this Mac for 8 weeks. Turning statistics off deletes them.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Хранятся только количества по дням, без самих слов, на этом Mac и 8 недель. Если выключить статистику, она удаляется."
+          }
+        }
+      }
+    },
     "Open System Settings…": {
       "localizations": {
         "ru": {
@@ -529,6 +569,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Удалить"
+          }
+        }
+      }
+    },
+    "Reset": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сбросить"
+          }
+        }
+      }
+    },
+    "Reset Statistics…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сбросить статистику…"
+          }
+        }
+      }
+    },
+    "Reset statistics?": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сбросить статистику?"
           }
         }
       }
@@ -623,6 +693,26 @@
         }
       }
     },
+    "Statistics": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Статистика"
+          }
+        }
+      }
+    },
+    "Statistics are off.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Статистика выключена."
+          }
+        }
+      }
+    },
     "Switch the keyboard layout automatically": {
       "localizations": {
         "ru": {
@@ -633,12 +723,42 @@
         }
       }
     },
+    "Time saved": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сэкономлено"
+          }
+        }
+      }
+    },
+    "Time saved is an estimate: noticing a mistake, erasing the word and typing it again.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сэкономленное время — оценка: заметить ошибку, стереть слово и набрать его заново."
+          }
+        }
+      }
+    },
     "To do that it needs two permissions. What you type stays on this Mac: it is never stored, logged or sent anywhere.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Для этого нужны два разрешения. То, что вы печатаете, остаётся на этом Mac: оно нигде не сохраняется, не записывается в журналы и никуда не отправляется."
+          }
+        }
+      }
+    },
+    "Today": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сегодня"
           }
         }
       }
@@ -753,12 +873,62 @@
         }
       }
     },
+    "Words fixed": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Исправлено слов"
+          }
+        }
+      }
+    },
+    "Words fixed and time saved are deleted for every day.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Исправленные слова и сэкономленное время будут удалены за все дни."
+          }
+        }
+      }
+    },
     "macOS's \"Automatically switch to a document's input source\" can undo the switch; turn it off in Keyboard settings.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Настройка macOS «Автоматически переключаться на источник ввода документа» может отменить переключение; выключите её в настройках клавиатуры."
+          }
+        }
+      }
+    },
+    "≈ %lld h %lld min": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "≈ %lld ч %lld мин"
+          }
+        }
+      }
+    },
+    "≈ %lld min": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "≈ %lld мин"
+          }
+        }
+      }
+    },
+    "≈ %lld s": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "≈ %lld с"
           }
         }
       }

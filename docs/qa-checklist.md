@@ -135,6 +135,11 @@ Type as fast as you can, without pausing at the spaces. Nothing may be lost, dup
 
 - [ ] After a few corrections, wait a minute (or quit Typo): `defaults read app.typo.Typo statistics` shows one entry for today, keyed like `2026-10-20`, holding only numbers under `layoutCorrection`, `spellingFix`, `accentRestoration`, `manualConversion`, `learnedFromRetyping`, `reverts`, `characters` and `secondsSaved`: no words, no times
 - [ ] Corrections made just before quitting Typo are still counted after a relaunch
+- [ ] With Settings → Statistics open, `ghbdtn␣` in TextEdit raises "Words fixed" by one under Today, 7 days and 30 days at once, and "Time saved" by ≈ 4 s
+- [ ] ⌫ right after a correction lowers "Words fixed" by one again, and "Time saved" by a little more than the correction added
+- [ ] "Time saved" shows seconds below a minute (`≈ 45 s`), then minutes (`≈ 2 min`), then hours and minutes (`≈ 1 h 5 min`)
+- [ ] "Reset Statistics…" asks first: Cancel keeps the numbers, Reset empties every column (0 and `≈ 0 s`)
+- [ ] Turning "Keep statistics" off shows "Statistics are off." and `defaults read app.typo.Typo statistics` finds nothing; corrections made while off are not counted; turned back on, every column starts from zero
 
 ## Password fields
 
@@ -149,6 +154,7 @@ Type as fast as you can, without pausing at the spaces. Nothing may be lost, dup
 
 - [ ] With macOS set to Russian (or `defaults write app.typo.Typo AppleLanguages '("ru")'` and relaunch), the menu, the "Set Up Typo" window, every Settings tab and About Typo are fully in Russian; with English, fully in English
 - [ ] Settings → General shows "После 1 исправления подряд" / "После 2 исправлений подряд" as the stepper changes
+- [ ] Settings → Статистика: "Сегодня", "7 дней", "30 дней", "Исправлено слов", "Сэкономлено" with `≈ 4 с`, `≈ 2 мин`, `≈ 1 ч 5 мин`
 
 ## Privacy
 

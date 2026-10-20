@@ -16,7 +16,7 @@ struct TypoApp: App {
         Settings {
             SettingsView(
                 settings: delegate.settings, pauseHotkey: delegate.pauseHotkey, launchAtLogin: delegate.launchAtLogin,
-                status: delegate.status)
+                status: delegate.status, statistics: delegate.statistics)
         }
     }
 }

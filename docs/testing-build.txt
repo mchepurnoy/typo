@@ -66,6 +66,10 @@ Apple Silicon, и Intel.
 - Настройки (меню → Настройки…): горячие клавиши, автопереключение раскладки,
   исправление опечаток, звук, списки исключений и выученных слов, приложения,
   в которых Typo ничего не делает.
+- Настройки → Статистика: сколько слов Typo исправил и примерно сколько
+  времени это сэкономило — сегодня, за 7 и за 30 дней. Цифры растут сразу,
+  пока вкладка открыта; Backspace сразу после исправления их уменьшает.
+  Статистику можно сбросить или выключить (тогда она удаляется).
 
 
 3. ЕСЛИ ЧТО-ТО НЕ ТАК — НАПИШИТЕ МНЕ
@@ -87,7 +91,8 @@ Apple Silicon, и Intel.
 
 Typo видит нажатия клавиш, но держит в памяти только текущее слово: ничего не
 сохраняет, не пишет в журналы и никуда не отправляет, интернет ему не нужен.
-На диске хранятся только настройки, исключения и выученные слова.
+На диске хранятся только настройки, исключения, выученные слова и статистика:
+количество исправлений по дням за последние 8 недель, без самих слов.
 Исходный код открыт (GPL-3.0).
 
 
@@ -106,5 +111,6 @@ notarized, so allow it once in System Settings → Privacy & Security → "Open
 Anyway" (or: xattr -dr com.apple.quarantine /Applications/Typo.app). Allow
 Accessibility and Input Monitoring in the "Set Up Typo" window. Backspace right
 after a correction undoes it; double-tap Shift converts the last word by hand;
-press and release Control+Command to pause or resume.
-Nothing you type is stored or sent anywhere.
+press and release Control+Command to pause or resume. Settings → Statistics
+shows words fixed and an estimate of the time saved today, in 7 and 30 days.
+Nothing you type is stored or sent anywhere; statistics are daily counts only.

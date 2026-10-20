@@ -67,7 +67,7 @@ One case it cannot see: a password prompt in a terminal (`sudo`, `ssh`), which i
 
 ## Privacy
 
-typo sees every key you press. What you type is kept in memory only for the current word and is never written to disk, logs or the network ([ADR 0003](docs/adr/0003-never-store-typed-text.md)).
+typo sees every key you press. What you type is kept in memory only for the current word and is never written to disk, logs or the network ([ADR 0003](docs/adr/0003-never-store-typed-text.md)). Settings → Statistics keeps only per-day counts of the rewrites typo made, for 8 weeks; turning it off deletes them ([ADR 0004](docs/adr/0004-daily-correction-counts.md)).
 
 ## License
 

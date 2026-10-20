@@ -131,6 +131,17 @@ struct StatisticsTests {
         #expect(Statistics(stored: counted.stored, timeZone: berlin) == counted)
     }
 
+    @Test("Time saved is shown in seconds below a minute, minutes below an hour, hours and minutes above", arguments: [
+        (0.0, Statistics.TimeSaved.seconds(0)), (-5.0, .seconds(0)), (4.4, .seconds(4)), (59.4, .seconds(59)),
+        (59.6, .minutes(1)), (89.0, .minutes(1)), (91.0, .minutes(2)), (2_100.0, .minutes(35)),
+        (3_569.0, .minutes(59)),  // 59 min 29 s
+        (3_571.0, .hours(1, minutes: 0)),  // 59 min 31 s
+        (12_310.0, .hours(3, minutes: 25)),  // 3 h 25 min 10 s
+    ])
+    func timeSaved(_ seconds: Double, _ shown: Statistics.TimeSaved) {
+        #expect(Statistics.TimeSaved(seconds: seconds) == shown)
+    }
+
     @Test("Stored data is day keys and numbers only: no words, no per-word lengths, no times of day")
     func storedDataIsCountsOnly() {
         let counted = statistics([

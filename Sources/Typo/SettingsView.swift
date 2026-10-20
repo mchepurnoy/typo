@@ -11,6 +11,7 @@ struct SettingsView: View {
     let pauseHotkey: PauseHotkey
     let launchAtLogin: LaunchAtLogin
     let status: Status
+    let statistics: StatisticsStore
 
     var body: some View {
         TabView {
@@ -22,6 +23,8 @@ struct SettingsView: View {
                 .tabItem { Label("Excluded Apps", systemImage: "nosign") }
             LayoutsTab(missingLanguages: status.missingLanguages)
                 .tabItem { Label("Layouts", systemImage: "keyboard") }
+            StatisticsTab(statistics: statistics)
+                .tabItem { Label("Statistics", systemImage: "chart.bar") }
         }
         .frame(width: 520, height: 400)
     }
@@ -390,6 +393,67 @@ private struct LayoutsTab: View {
         .onReceive(DistributedNotificationCenter.default().publisher(
             for: Notification.Name(kTISNotifyEnabledKeyboardInputSourcesChanged as String))) { _ in
             layouts = SystemLayouts.enabled()
+        }
+    }
+}
+
+/// Words fixed and an estimate of the time saved, for today, 7 and 30 days. It reads the store's
+/// counts, so it updates as rewrites happen while it is open.
+private struct StatisticsTab: View {
+    @Bindable var statistics: StatisticsStore
+    @State private var confirmsReset = false
+
+    var body: some View {
+        Form {
+            Section {
+                if statistics.isKept {
+                    let totals = [1, 7, 30].map(statistics.totals(days:))
+                    Grid(alignment: .trailing, horizontalSpacing: 24, verticalSpacing: 8) {
+                        GridRow {
+                            Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+                            Text("Today")
+                            Text("7 days")
+                            Text("30 days")
+                        }
+                        .foregroundStyle(.secondary)
+                        GridRow {
+                            Text("Words fixed").gridColumnAlignment(.leading)
+                            ForEach(totals.indices, id: \.self) { Text(totals[$0].wordsFixed, format: .number) }
+                        }
+                        GridRow {
+                            Text("Time saved")
+                            ForEach(totals.indices, id: \.self) { Self.timeSaved(totals[$0].secondsSaved) }
+                        }
+                    }
+                    .monospacedDigit()
+                } else {
+                    Text("Statistics are off.").foregroundStyle(.secondary)
+                }
+            } footer: {
+                Text("Time saved is an estimate: noticing a mistake, erasing the word and typing it again.")
+            }
+
+            Section {
+                Toggle("Keep statistics", isOn: $statistics.isKept)
+                Button("Reset Statistics…") { confirmsReset = true }
+                    .disabled(!statistics.isKept)
+            } footer: {
+                Text("Only daily counts, never the words, kept on this Mac for 8 weeks. Turning statistics off deletes them.")
+            }
+        }
+        .formStyle(.grouped)
+        .confirmationDialog("Reset statistics?", isPresented: $confirmsReset) {
+            Button("Reset", role: .destructive) { statistics.reset() }
+        } message: {
+            Text("Words fixed and time saved are deleted for every day.")
+        }
+    }
+
+    private static func timeSaved(_ seconds: Double) -> Text {
+        switch Statistics.TimeSaved(seconds: seconds) {
+        case .seconds(let seconds): Text("≈ \(seconds) s")
+        case .minutes(let minutes): Text("≈ \(minutes) min")
+        case .hours(let hours, let minutes): Text("≈ \(hours) h \(minutes) min")
         }
     }
 }

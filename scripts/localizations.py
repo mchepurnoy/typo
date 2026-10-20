@@ -72,6 +72,7 @@ TRANSLATIONS = {
     "Words": "Слова",
     "Excluded Apps": "Исключённые приложения",
     "Layouts": "Раскладки",
+    "Statistics": "Статистика",
     # Settings: General
     "Launch at login": "Открывать при входе в систему",
     "Allow Typo in System Settings → General → Login Items.":
@@ -131,6 +132,27 @@ TRANSLATIONS = {
     "Russian": "русский",
     "German": "немецкий",
     "Spanish": "испанский",
+    # Settings: Statistics (abbreviated units do not change with the number, in English or Russian)
+    "Today": "Сегодня",
+    "7 days": "7 дней",
+    "30 days": "30 дней",
+    "Words fixed": "Исправлено слов",
+    "Time saved": "Сэкономлено",
+    "≈ %lld s": "≈ %lld с",
+    "≈ %lld min": "≈ %lld мин",
+    "≈ %lld h %lld min": "≈ %lld ч %lld мин",
+    "Statistics are off.": "Статистика выключена.",
+    "Time saved is an estimate: noticing a mistake, erasing the word and typing it again.":
+        "Сэкономленное время — оценка: заметить ошибку, стереть слово и набрать его заново.",
+    "Keep statistics": "Вести статистику",
+    "Reset Statistics…": "Сбросить статистику…",
+    "Only daily counts, never the words, kept on this Mac for 8 weeks. Turning statistics off deletes them.":
+        "Хранятся только количества по дням, без самих слов, на этом Mac и 8 недель. "
+        "Если выключить статистику, она удаляется.",
+    "Reset statistics?": "Сбросить статистику?",
+    "Reset": "Сбросить",
+    "Words fixed and time saved are deleted for every day.":
+        "Исправленные слова и сэкономленное время будут удалены за все дни.",
 }
 
 # Plural strings: key -> (English one/other, Russian one/few/many/other)
