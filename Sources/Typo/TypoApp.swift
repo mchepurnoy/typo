@@ -14,7 +14,9 @@ struct TypoApp: App {
             MenuBarIcon(status: delegate.status, settings: delegate.settings)
         }
         Settings {
-            SettingsView(settings: delegate.settings, launchAtLogin: delegate.launchAtLogin, status: delegate.status)
+            SettingsView(
+                settings: delegate.settings, pauseHotkey: delegate.pauseHotkey, launchAtLogin: delegate.launchAtLogin,
+                status: delegate.status)
         }
     }
 }
@@ -94,7 +96,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private static let onboardedKey = "onboardingShown"
 
     let status = Status()
-    let settings = SettingsStore()
+    let settings: SettingsStore
+    let pauseHotkey: PauseHotkey
     let permissions = Permissions()
     let launchAtLogin = LaunchAtLogin()
     private lazy var onboarding = OnboardingWindow(permissions: permissions)
@@ -105,9 +108,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Accessibility was granted while typo ran.
     private var wasTrusted = false
 
+    override init() {
+        settings = SettingsStore()
+        pauseHotkey = PauseHotkey(settings: settings)
+        super.init()
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)  // Info.plist sets LSUIElement too; this covers `swift run`
         launchAtLogin.enableOnFirstLaunch()
+        pauseHotkey.start()
         permissions.onTick = { [weak self] in
             self?.syncWithPermissions()
             self?.launchAtLogin.refresh()
@@ -131,6 +141,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let monitor = KeyboardMonitor(
                 languageModels: models, accentTables: accents, spellChecker: spellChecker, settings: settings)
             monitor.onRewrite = { [weak self] in self?.correctionFeedback() }
+            monitor.onModifierTap = { [pauseHotkey] in pauseHotkey.modifiersTapped($0) }
             self.monitor = monitor
             syncWithPermissions()
         }

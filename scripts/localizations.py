@@ -82,6 +82,15 @@ TRANSLATIONS = {
     "Option": "Option",
     "Control": "Control",
     "Command": "Command",
+    "Pause or resume Typo": "Приостановить или возобновить Typo",
+    "Record Shortcut": "Задать сочетание",
+    "Press a shortcut…": "Нажмите сочетание…",
+    "Two modifiers alone (⌃⌘), a key with ⌘, ⌥ or ⌃, or a function key. Esc cancels.":
+        "Два модификатора без клавиши (⌃⌘), клавиша с ⌘, ⌥ или ⌃ либо функциональная клавиша. Esc — отмена.",
+    "Clear": "Очистить",
+    "Another app uses %@, so it was removed; choose another shortcut.":
+        "%@ занято другим приложением, поэтому оно убрано; выберите другое сочетание.",
+    "Space": "Пробел",
     "Switch the keyboard layout automatically": "Переключать раскладку автоматически",
     "macOS's \"Automatically switch to a document's input source\" can undo the switch; turn it off in Keyboard settings.":
         "Настройка macOS «Автоматически переключаться на источник ввода документа» может отменить "

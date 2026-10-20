@@ -39,6 +39,7 @@ final class KeyboardMonitor {
     private var tap: CFMachPort?
     private var tapSource: CFRunLoopSource?
     private var doubleTap = DoubleTapDetector()
+    private var modifierTap = ModifierTapDetector()
 
     private var fenceSequence: UInt32 = 0
     /// The fence the current fix waits for; `nil` when no fix is in flight.
@@ -54,6 +55,9 @@ final class KeyboardMonitor {
     private var keyTarget: (pid: Int64, bundleID: String?)?
     /// Called after typo rewrote a word (a correction, a conversion or a revert).
     var onRewrite: (() -> Void)?
+    /// Called when modifiers were pressed together and released with nothing else in between
+    /// (a modifier-only shortcut such as ⌃⌘), also while typo is paused or secure input is on.
+    var onModifierTap: ((Modifiers) -> Void)?
     private var isBackingOff = false
 
     init(
@@ -163,6 +167,7 @@ final class KeyboardMonitor {
             return true
         case .leftMouseDown, .rightMouseDown, .otherMouseDown:
             doubleTap.otherInput()
+            modifierTap.otherInput()
             send(.reset(.mouse))
             passwordFields.checkSoon()
             return true
@@ -183,6 +188,7 @@ final class KeyboardMonitor {
     /// Feeds a key-down to the Engine and starts the fix it asks for. Returns whether the key passes.
     private func keyDown(_ event: CGEvent) -> Bool {
         doubleTap.otherInput()
+        modifierTap.otherInput()
         trackKeyTarget(event)
         if engine.isInactive { return true }
         if IsSecureEventInputEnabled() {
@@ -244,9 +250,12 @@ final class KeyboardMonitor {
 
     // MARK: Hotkey
 
-    /// Feeds the hotkey modifier's presses and releases to the double-tap detector; any other
-    /// modifier interrupts it.
+    /// Feeds the hotkey modifier's presses and releases to the double-tap detector (any other
+    /// modifier interrupts it), and every modifier change to the modifier-tap detector.
     private func handleModifier(_ event: CGEvent) {
+        // CGEvent timestamps are not nanoseconds everywhere; the detectors need nanoseconds
+        let now = DispatchTime.now().uptimeNanoseconds
+        if let tapped = modifierTap.modifiers(Self.modifiers(event.flags), at: now) { onModifierTap?(tapped) }
         let code = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
         let (codes, mask) = Self.modifier(settings.hotkey)
         // In a password field the tap sees Shift but not the letters it capitalises; during a fix
@@ -255,11 +264,19 @@ final class KeyboardMonitor {
             doubleTap.otherInput()
             return
         }
-        // CGEvent timestamps are not nanoseconds everywhere; the detector needs nanoseconds
-        if doubleTap.modifier(isDown: event.flags.contains(mask), at: DispatchTime.now().uptimeNanoseconds) {
+        if doubleTap.modifier(isDown: event.flags.contains(mask), at: now) {
             layouts.syncCurrent()
             send(.hotkey)
         }
+    }
+
+    private static func modifiers(_ flags: CGEventFlags) -> Modifiers {
+        var modifiers: Modifiers = []
+        if flags.contains(.maskControl) { modifiers.insert(.control) }
+        if flags.contains(.maskAlternate) { modifiers.insert(.option) }
+        if flags.contains(.maskShift) { modifiers.insert(.shift) }
+        if flags.contains(.maskCommand) { modifiers.insert(.command) }
+        return modifiers
     }
 
     /// Left and right keycodes and the flag of each hotkey modifier.

@@ -18,6 +18,7 @@ final class SettingsStore {
         static let playsSound = "playsSound"
         static let fixesTypos = "fixesTypos"
         static let restoresAccents = "restoresAccents"
+        static let pauseShortcut = "pauseShortcut"
     }
 
     /// The modifier whose double tap is the manual-conversion hotkey.
@@ -57,6 +58,15 @@ final class SettingsStore {
             guard isPaused != oldValue else { return }
             defaults.set(isPaused, forKey: Key.isPaused)
             onChange?(engineSettings)
+        }
+    }
+
+    /// The shortcut that pauses and resumes typo from any app; ⌃⌘ by default.
+    var pauseShortcut: Shortcut? {
+        didSet {
+            guard pauseShortcut != oldValue else { return }
+            // An empty entry, not a missing one, keeps a cleared shortcut from turning back into the default
+            defaults.set(pauseShortcut?.propertyList ?? [:], forKey: Key.pauseShortcut)
         }
     }
 
@@ -122,6 +132,8 @@ final class SettingsStore {
         learnedWords = Set(defaults.stringArray(forKey: Key.learnedWords) ?? [])
         hotkey = defaults.string(forKey: Key.hotkey).flatMap(Hotkey.init(rawValue:)) ?? .shift
         isPaused = defaults.bool(forKey: Key.isPaused)
+        let storedShortcut = defaults.object(forKey: Key.pauseShortcut)
+        pauseShortcut = storedShortcut == nil ? .pause : Shortcut(propertyList: storedShortcut)
         excludedApps = Set(defaults.stringArray(forKey: Key.excludedApps) ?? [])
         playsSound = defaults.bool(forKey: Key.playsSound)
         fixesTypos = defaults.object(forKey: Key.fixesTypos) as? Bool ?? true

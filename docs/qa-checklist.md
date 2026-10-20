@@ -22,6 +22,11 @@ Setup: turn off System Settings → Keyboard → Input Sources → "Automaticall
 ## Pause, excluded apps and feedback
 
 - [ ] **Pause Typo** shows a pause icon and `ghbdtn␣` stays; unpausing corrects again; the pause survives a relaunch
+- [ ] Fresh settings: Settings → General → "Pause or resume Typo" shows `⌃⌘`; pressing ⌃ and ⌘ together and releasing them in TextEdit dims the icon and `ghbdtn␣` stays; doing it again corrects again
+- [ ] ⌃⌘ followed by a key (⌃⌘F full screen, ⌃⌘Space emoji) or a click does not pause; a single tap of ⌃ or ⌘ does not pause
+- [ ] ⌃⌘ also toggles inside a password field (Safari login form, Terminal with Secure Keyboard Entry on)
+- [ ] Recorder: click, press ⌃⌥P → shows `⌃⌥P`, and ⌃⌥P now toggles from any app while ⌃⌘ does not; press ⌥⇧ alone → shows `⌥⇧`; Esc while recording keeps the old shortcut; ⌫ or ✕ clears it and it stays cleared after a relaunch; a plain letter only beeps
+- [ ] A key combination another app has registered is removed at once, with "Another app uses … so it was removed" under the recorder
 - [ ] Settings → Excluded Apps → add Terminal: nothing is corrected in Terminal, TextEdit still corrects; Spotlight opened over Terminal still corrects
 - [ ] The menu-bar icon briefly fills on each correction
 - [ ] No sound by default; with Settings → General → "Play a sound on each correction" on, each correction plays one sound, also two corrections in a row

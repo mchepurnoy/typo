@@ -8,12 +8,13 @@ import UniformTypeIdentifiers
 /// hands the change to the Engine at once: nothing needs a restart.
 struct SettingsView: View {
     let settings: SettingsStore
+    let pauseHotkey: PauseHotkey
     let launchAtLogin: LaunchAtLogin
     let status: Status
 
     var body: some View {
         TabView {
-            GeneralTab(settings: settings, launchAtLogin: launchAtLogin)
+            GeneralTab(settings: settings, pauseHotkey: pauseHotkey, launchAtLogin: launchAtLogin)
                 .tabItem { Label("General", systemImage: "gearshape") }
             WordsTab(settings: settings)
                 .tabItem { Label("Words", systemImage: "text.badge.checkmark") }
@@ -28,6 +29,7 @@ struct SettingsView: View {
 
 private struct GeneralTab: View {
     @Bindable var settings: SettingsStore
+    @Bindable var pauseHotkey: PauseHotkey
     let launchAtLogin: LaunchAtLogin
 
     var body: some View {
@@ -43,6 +45,14 @@ private struct GeneralTab: View {
                 }
             }
 
+            LabeledContent("Pause or resume Typo") {
+                ShortcutRecorder(shortcut: $settings.pauseShortcut, isRecording: $pauseHotkey.isSuspended)
+            }
+            if let refused = pauseHotkey.refused {
+                Text("Another app uses \(refused.displayName), so it was removed; choose another shortcut.")
+                    .font(.caption).foregroundStyle(.orange)
+            }
+
             Toggle("Switch the keyboard layout automatically", isOn: $settings.switchesLayout)
             if settings.switchesLayout {
                 Stepper("After \(settings.switchAfter) corrections in a row", value: $settings.switchAfter, in: 1...5)
@@ -55,6 +65,78 @@ private struct GeneralTab: View {
             Toggle("Play a sound on each correction", isOn: $settings.playsSound)
         }
         .formStyle(.grouped)
+    }
+}
+
+/// Records a shortcut: click, then press a key combination, or press modifiers together and release
+/// them. Escape cancels, Delete clears.
+private struct ShortcutRecorder: View {
+    @Binding var shortcut: Shortcut?
+    @Binding var isRecording: Bool
+    @State private var monitor: Any?
+    /// Every modifier held since the last time none was, unless a key was pressed meanwhile.
+    @State private var tapped: NSEvent.ModifierFlags = []
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Button {
+                if isRecording { stop() } else { start() }
+            } label: {
+                if isRecording {
+                    Text("Press a shortcut…")
+                } else if let shortcut {
+                    Text(verbatim: shortcut.displayName)
+                } else {
+                    Text("Record Shortcut")
+                }
+            }
+            .help("Two modifiers alone (⌃⌘), a key with ⌘, ⌥ or ⌃, or a function key. Esc cancels.")
+            if shortcut != nil, !isRecording {
+                Button { shortcut = nil } label: { Image(systemName: "xmark.circle.fill") }
+                    .buttonStyle(.borderless)
+                    .help("Clear")
+            }
+        }
+        .onDisappear(perform: stop)
+    }
+
+    private func start() {
+        isRecording = true
+        tapped = []
+        monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { event in
+            if event.type == .flagsChanged {
+                let held = event.modifierFlags.intersection([.control, .option, .shift, .command])
+                tapped.formUnion(held)
+                if held.isEmpty {
+                    if let recorded = Shortcut(modifiersAlone: tapped) {
+                        shortcut = recorded
+                        stop()
+                    }
+                    tapped = []
+                }
+                return event
+            }
+            tapped = []
+            let plain = event.modifierFlags.isDisjoint(with: [.command, .option, .control, .shift])
+            if plain, event.keyCode == kVK_Escape {
+                stop()
+            } else if plain, event.keyCode == kVK_Delete || event.keyCode == kVK_ForwardDelete {
+                shortcut = nil
+                stop()
+            } else if let recorded = Shortcut(event) {
+                shortcut = recorded
+                stop()
+            } else {
+                NSSound.beep()
+            }
+            return nil
+        }
+    }
+
+    private func stop() {
+        if let monitor { NSEvent.removeMonitor(monitor) }
+        monitor = nil
+        isRecording = false
     }
 }
 

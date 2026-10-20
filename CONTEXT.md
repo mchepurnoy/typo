@@ -61,4 +61,4 @@ An app the user has told typo to ignore entirely; the list starts empty.
 _Avoid_: blacklist
 
 **Pause**:
-A global off switch in the menu bar that stops all corrections until resumed.
+A global off switch that stops all corrections until resumed: in the menu bar, or with a shortcut (⌃⌘ pressed together and released, by default; the user can change or clear it), e.g. to type a password and resume.

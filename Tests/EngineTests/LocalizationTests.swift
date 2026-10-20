@@ -10,7 +10,7 @@ struct LocalizationTests {
         .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
 
     /// Literals passed to SwiftUI views and localization APIs, on one line.
-    private static var localizedLiteral: Regex<(Substring, Substring)> { #/(?:Text|Button|Toggle|Label|Picker|TextField|Stepper|LocalizedStringKey|\.help|String\(localized:|title:|reason:)\s*\(?\s*"((?:[^"\\]|\\.)*)"/# }
+    private static var localizedLiteral: Regex<(Substring, Substring)> { #/(?:Text|Button|Toggle|LabeledContent|Label|Picker|TextField|Stepper|LocalizedStringKey|\.help|String\(localized:|title:|reason:)\s*\(?\s*"((?:[^"\\]|\\.)*)"/# }
 
     private static func normalize(_ key: String) -> String {
         key.replacing(#/\\\([^)]*(?:\([^)]*\))*[^)]*\)/#, with: "§").replacing(#/%(?:@|lld)/#, with: "§")

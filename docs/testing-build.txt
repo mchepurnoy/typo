@@ -55,12 +55,15 @@ Apple Silicon, и Intel.
 - Typo не заметил слово — дважды быстро нажмите Shift: последнее слово
   переведётся в другую раскладку, и Typo его запомнит.
 - Стёрли слово и перепечатали в другой раскладке сами — Typo тоже запомнит.
+- Нужно ненадолго выключить Typo (например, чтобы ввести пароль) — нажмите
+  вместе Control и Command и отпустите: значок потускнеет. Ещё раз — Typo
+  снова работает. Сочетание можно поменять или убрать в настройках.
 - Пароли, команды (/exit), адреса, слова с цифрами и camelCase Typo не трогает.
   В полях пароля Typo полностью молчит. Исключение — пароль в Терминале (sudo,
   ssh): macOS не сообщает, что это пароль. Если вводите там пароли, включите
   Терминал → «Защищённый ввод с клавиатуры» (Secure Keyboard Entry) или
   добавьте Терминал в исключённые приложения в настройках Typo.
-- Настройки (меню → Настройки…): горячая клавиша, автопереключение раскладки,
+- Настройки (меню → Настройки…): горячие клавиши, автопереключение раскладки,
   исправление опечаток, звук, списки исключений и выученных слов, приложения,
   в которых Typo ничего не делает.
 
@@ -76,7 +79,8 @@ Apple Silicon, и Intel.
   отчёт лежит в ~/Library/Logs/DiagnosticReports (файл Typo-….ips),
   его можно прислать.
 
-Быстро выключить Typo: меню → «Приостановить Typo» или «Завершить Typo».
+Быстро выключить Typo: Control+Command, меню → «Приостановить Typo» или
+«Завершить Typo».
 
 
 4. ПРИВАТНОСТЬ
@@ -101,5 +105,6 @@ press Space. macOS 14+. Drag Typo.app to Applications; the build is not
 notarized, so allow it once in System Settings → Privacy & Security → "Open
 Anyway" (or: xattr -dr com.apple.quarantine /Applications/Typo.app). Allow
 Accessibility and Input Monitoring in the "Set Up Typo" window. Backspace right
-after a correction undoes it; double-tap Shift converts the last word by hand.
+after a correction undoes it; double-tap Shift converts the last word by hand;
+press and release Control+Command to pause or resume.
 Nothing you type is stored or sent anywhere.
