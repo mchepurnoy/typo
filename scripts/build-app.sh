@@ -29,6 +29,7 @@ codesign --force --sign "${CODESIGN_ID:--}" "$APP"
 if [ -z "${CODESIGN_ID:-}" ]; then
   # An ad-hoc signature changes every build, so a stale grant would look enabled but not work.
   tccutil reset Accessibility "$BUNDLE_ID" >/dev/null 2>&1 || true
-  echo "Ad-hoc signed: Accessibility was reset for $BUNDLE_ID; grant it again on first launch."
+  tccutil reset ListenEvent "$BUNDLE_ID" >/dev/null 2>&1 || true
+  echo "Ad-hoc signed: Accessibility and Input Monitoring were reset for $BUNDLE_ID; grant them again on first launch."
 fi
 echo "Built $APP — run: open $APP"

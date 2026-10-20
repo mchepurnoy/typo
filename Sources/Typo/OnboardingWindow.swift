@@ -5,6 +5,8 @@ import SwiftUI
 /// opens the exact System Settings pane. It updates live as permissions are granted.
 @MainActor
 final class OnboardingWindow {
+    static let size = CGSize(width: 460, height: 360)
+
     private let permissions: Permissions
     private var window: NSWindow?
 
@@ -21,12 +23,13 @@ final class OnboardingWindow {
             let content = NSHostingView(rootView: OnboardingView(permissions: permissions) { [weak self] in
                 self?.window?.close()
             })
-            // Sized once, here. Letting the hosting view drive the window's min/max size whenever its
-            // wrapping text re-measures (e.g. a permission turns green) can loop through constraint
-            // passes until AppKit throws and the app crashes.
+            // Sized once, here, to the view's fixed frame. Letting the hosting view drive the window's
+            // min/max size whenever its wrapping text re-measures (e.g. a permission turns green) can
+            // loop through constraint passes until AppKit throws and the app crashes. Without that,
+            // its fittingSize is zero on macOS 27, which left the window open but invisible.
             content.sizingOptions = []
             window.contentView = content
-            window.setContentSize(content.fittingSize)
+            window.setContentSize(Self.size)
             window.center()
             self.window = window
         }
@@ -75,7 +78,7 @@ private struct OnboardingView: View {
             }
         }
         .padding(24)
-        .frame(width: 460, height: 360, alignment: .top)
+        .frame(width: OnboardingWindow.size.width, height: OnboardingWindow.size.height, alignment: .top)
     }
 }
 
