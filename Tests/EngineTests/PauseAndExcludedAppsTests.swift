@@ -18,7 +18,8 @@ struct PauseAndExcludedAppsTests {
         #expect(word("ghbdtn", &engine) == .pass)
         #expect(engine.handle(.hotkey, layouts: layouts) == .pass)
         engine.settings.isPaused = false
-        #expect(word("ghbdtn", &engine) == .swallow([.erase(6), .type("привет"), .replayBoundary]))
+        #expect(word("ghbdtn", &engine) == .swallow(
+            [.erase(6), .type("привет"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 6)))
     }
 
     @Test("Pausing mid-word forgets the word")
@@ -29,7 +30,8 @@ struct PauseAndExcludedAppsTests {
         for key in us.keys(typing: "dtn") { _ = engine.handle(.key(key), layouts: layouts) }
         engine.settings.isPaused = false
         for key in us.keys(typing: "rfr") { _ = engine.handle(.key(key), layouts: layouts) }
-        #expect(engine.handle(.boundary(.space), layouts: layouts) == .swallow([.erase(3), .type("как"), .replayBoundary]))
+        #expect(engine.handle(.boundary(.space), layouts: layouts) == .swallow(
+            [.erase(3), .type("как"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 3)))
     }
 
     @Test("While an excluded app is active everything passes")
@@ -39,7 +41,8 @@ struct PauseAndExcludedAppsTests {
         #expect(word("ghbdtn", &engine) == .pass)
         #expect(engine.handle(.hotkey, layouts: layouts) == .pass)
         _ = engine.handle(.appActivated("com.apple.TextEdit"), layouts: layouts)
-        #expect(word("ghbdtn", &engine) == .swallow([.erase(6), .type("привет"), .replayBoundary]))
+        #expect(word("ghbdtn", &engine) == .swallow(
+            [.erase(6), .type("привет"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 6)))
     }
 
     @Test("Excluding the active app takes effect at once")
@@ -55,6 +58,7 @@ struct PauseAndExcludedAppsTests {
         var engine = Engine(languageModels: BundledModels.all)
         for key in us.keys(typing: "ghbdtn") { _ = engine.handle(.key(key), layouts: layouts) }
         _ = engine.handle(.appActivated("com.apple.Safari"), layouts: layouts)
-        #expect(word("rfr", &engine) == .swallow([.erase(3), .type("как"), .replayBoundary]))
+        #expect(word("rfr", &engine) == .swallow(
+            [.erase(3), .type("как"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 3)))
     }
 }

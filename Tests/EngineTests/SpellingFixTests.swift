@@ -25,7 +25,7 @@ private func typo(
 }
 
 private func fixed(_ typed: String, to word: String) -> Response {
-    .swallow([.erase(typed.count), .type(word), .replayBoundary])
+    .swallow([.erase(typed.count), .type(word), .replayBoundary], rewrite: .made(.spellingFix, characters: word.count))
 }
 
 @Suite("Spelling fix")
@@ -104,7 +104,8 @@ struct SpellingFixTests {
         for key in us.keys(typing: "teh") { _ = engine.handle(.key(key), layouts: layouts) }
         _ = engine.handle(.boundary(.space), layouts: layouts)
         #expect(engine.handle(.backspace, layouts: layouts)
-            == .swallow([.erase(4), .type("teh"), .pressBoundary(.space), .recordException("teh")]))
+            == .swallow([.erase(4), .type("teh"), .pressBoundary(.space), .recordException("teh")],
+                        rewrite: .reverted(.spellingFix, characters: 3)))
         for key in us.keys(typing: "teh") { _ = engine.handle(.key(key), layouts: layouts) }
         #expect(engine.handle(.boundary(.space), layouts: layouts) == .pass)
     }
@@ -131,7 +132,8 @@ struct SpellingFixTests {
 
     @Test("A wrong-layout word is converted, not spelling-fixed")
     func layoutFirst() {
-        #expect(typo("ghbdtn") == .swallow([.erase(6), .type("привет"), .replayBoundary]))
+        #expect(typo("ghbdtn") == .swallow(
+            [.erase(6), .type("привет"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 6)))
     }
 }
 

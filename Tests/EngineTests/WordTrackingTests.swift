@@ -29,7 +29,8 @@ struct WordTrackingTests {
         session.type("ghbdtn", as: us)
         #expect(session.engine.handle(.reset(reason), layouts: session.layouts) == .pass)
         session.type("rfr", as: us)
-        #expect(session.space() == .swallow([.erase(3), .type("как"), .replayBoundary]))
+        #expect(session.space() == .swallow(
+            [.erase(3), .type("как"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 3)))
     }
 
     @Test("Escape resets the word")
@@ -52,7 +53,9 @@ struct WordTrackingTests {
     func technicalCharactersAtTheEnds(_ typed: String, _ expected: String) {
         var session = Session()
         session.type(typed, as: us)
-        #expect(session.space() == .swallow([.erase(typed.count), .type(expected), .replayBoundary]))
+        #expect(session.space() == .swallow(
+            [.erase(typed.count), .type(expected), .replayBoundary],
+            rewrite: .made(.layoutCorrection, characters: expected.count)))
     }
 
     @Test("camelCase words are skipped", arguments: ["ghbDtn", "getValue", "rfrLtkf"])
@@ -72,7 +75,8 @@ struct WordTrackingTests {
         #expect(session.space() == .pass)
         // The next word is tracked normally
         session.type("руддщ", as: russianPC)
-        #expect(session.space() == .swallow([.erase(5), .type("hello"), .replayBoundary]))
+        #expect(session.space() == .swallow(
+            [.erase(5), .type("hello"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 5)))
     }
 
     @Test("Erasing the key typed on the other layout makes the word trackable again")
@@ -84,7 +88,8 @@ struct WordTrackingTests {
         _ = session.engine.handle(.backspace, layouts: session.layouts)
         session.layouts = ActiveLayouts(current: us, enabled: [us, russianPC])
         session.type("dtn", as: us)
-        #expect(session.space() == .swallow([.erase(6), .type("привет"), .replayBoundary]))
+        #expect(session.space() == .swallow(
+            [.erase(6), .type("привет"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 6)))
     }
 
     @Test("Switching between layouts of the same script mid-word does not mix scripts")
@@ -94,7 +99,8 @@ struct WordTrackingTests {
         session.type("ghb", as: us)
         session.layouts = ActiveLayouts(current: FixtureLayout.german, enabled: [us, FixtureLayout.german, russianPC])
         session.type("dtn", as: us)
-        #expect(session.space() == .swallow([.erase(6), .type("привет"), .replayBoundary]))
+        #expect(session.space() == .swallow(
+            [.erase(6), .type("привет"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 6)))
     }
 
     @Test("A layout switch after the last key does not change how the word is read")
@@ -102,7 +108,8 @@ struct WordTrackingTests {
         var session = Session()
         session.type("ghbdtn", as: us)
         session.layouts = ActiveLayouts(current: russianPC, enabled: [us, russianPC])
-        #expect(session.space() == .swallow([.erase(6), .type("привет"), .replayBoundary]))
+        #expect(session.space() == .swallow(
+            [.erase(6), .type("привет"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 6)))
     }
 
     @Test("Capitalisation is preserved", arguments: [
@@ -112,7 +119,9 @@ struct WordTrackingTests {
         var session = Session()
         session.type(typed, as: us, capsLock: capsLock)
         let shown = capsLock ? typed.uppercased() : typed
-        #expect(session.space() == .swallow([.erase(shown.count), .type(expected), .replayBoundary]))
+        #expect(session.space() == .swallow(
+            [.erase(shown.count), .type(expected), .replayBoundary],
+            rewrite: .made(.layoutCorrection, characters: expected.count)))
     }
 
     @Test("Caps Lock is read from the key-down")

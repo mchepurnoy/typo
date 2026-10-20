@@ -15,7 +15,9 @@ private func typeWords(_ words: [String], on layout: FixtureLayout, settings: En
 }
 
 private func corrected(_ text: String, typedAs typed: String, thenSelect layout: FixtureLayout? = nil) -> Response {
-    .swallow([.erase(typed.count), .type(text), .replayBoundary] + (layout.map { [.selectLayout($0.id)] } ?? []))
+    .swallow(
+        [.erase(typed.count), .type(text), .replayBoundary] + (layout.map { [.selectLayout($0.id)] } ?? []),
+        rewrite: .made(.layoutCorrection, characters: text.count))
 }
 
 @Suite("Short words and layout switch")

@@ -34,13 +34,15 @@ struct CommandAndSymbolTests {
         let layouts = ActiveLayouts(current: russianPC, enabled: [us, russianPC])
         for key in us.keys(typing: "/exit") { _ = engine.handle(.key(key), layouts: layouts) }
         #expect(engine.handle(.boundary(.return), layouts: layouts)
-            == .swallow([.erase(5), .type("/exit"), .replayBoundary]))
+            == .swallow([.erase(5), .type("/exit"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 5)))
     }
 
     @Test("Russian punctuation typed on U.S. still works: ghbdtn/ → привет., @ghbdtn@ → \"привет\"", arguments: [
         ("ghbdtn/", "привет."), ("@ghbdtn@", "\"привет\""), ("ghbdtn&", "привет?"),
     ])
     func russianPunctuation(_ typed: String, _ expected: String) {
-        #expect(outcome(typed) == .swallow([.erase(typed.count), .type(expected), .replayBoundary]))
+        #expect(outcome(typed) == .swallow(
+            [.erase(typed.count), .type(expected), .replayBoundary],
+            rewrite: .made(.layoutCorrection, characters: expected.count)))
     }
 }

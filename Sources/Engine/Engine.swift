@@ -78,9 +78,9 @@ public struct Engine: Sendable {
 
     private struct Revertible {
         let correction: Correction
-        /// Whether the user asked for it with the hotkey, rather than detection. Only automatic
-        /// corrections are reverted by Backspace; the hotkey toggles either.
-        let isManual: Bool
+        /// What made it. Only automatic rewrites are reverted by Backspace; the hotkey toggles a
+        /// manual conversion too.
+        let kind: Rewrite.Kind
         /// The boundary typed after the word, if the conversion happened after one (always Space).
         let boundary: BoundaryKind?
         /// The layout that was active before this conversion switched it, if it did.
@@ -91,6 +91,12 @@ public struct Engine: Sendable {
         var wasException = false
         /// For a manual conversion of the word being typed: how it was tracked before.
         var wordBefore: (layout: any Layout, keyScripts: [Script?])?
+
+        /// Whether the user asked for it with the hotkey, rather than detection.
+        var isManual: Bool { kind == .manualConversion }
+
+        var made: Rewrite { .made(kind, characters: correction.replacement.count) }
+        var reverted: Rewrite { .reverted(kind, characters: correction.replacement.count) }
     }
 
     /// - Parameters:
@@ -149,7 +155,9 @@ public struct Engine: Sendable {
             prepareSpellCheck(layouts)
             return .pass
         case .backspace:
-            if let justConverted, !justConverted.isManual { return .swallow(revert(justConverted)) }
+            if let justConverted, !justConverted.isManual {
+                return .swallow(revert(justConverted), rewrite: justConverted.reverted)
+            }
             if word.isEmpty {
                 // Editing text before the word, maybe the correction itself: it no longer counts
                 streak = nil
@@ -186,8 +194,10 @@ public struct Engine: Sendable {
             return .pass
         case .hotkey:
             // The hotkey itself (a modifier) passes; only the actions matter
-            if let justConverted { return Response(disposition: .pass, actions: revert(justConverted)) }
-            return Response(disposition: .pass, actions: convertManually(layouts, finished: justFinished))
+            if let justConverted {
+                return Response(disposition: .pass, actions: revert(justConverted), rewrite: justConverted.reverted)
+            }
+            return convertManually(layouts, finished: justFinished)
         case .boundary(let boundary):
             defer { forgetWord() }
             let retyped = erased
@@ -205,10 +215,10 @@ public struct Engine: Sendable {
             if let wordLayouts, layoutCorrection == nil, settings.restoresAccents, !quietApp,
                let restoration = detector.accentRestoration(for: word, layouts: wordLayouts, exceptions: settings.exceptions) {
                 streak = nil
-                if boundary == .space {
-                    revertible = Revertible(correction: restoration, isManual: false, boundary: boundary, switchedFrom: nil)
-                }
-                return .swallow([.erase(restoration.original.count), .type(restoration.replacement), .replayBoundary])
+                let conversion = Revertible(correction: restoration, kind: .accentRestoration, boundary: boundary, switchedFrom: nil)
+                if boundary == .space { revertible = conversion }
+                return .swallow([.erase(restoration.original.count), .type(restoration.replacement), .replayBoundary],
+                                rewrite: conversion.made)
             }
             // A word with a typo can look like gibberish typed in the wrong layout ("весх" → "dtc["):
             // a confident spelling fix beats a conversion into a word only the trigrams vouch for
@@ -216,10 +226,9 @@ public struct Engine: Sendable {
                !quietApp,
                let fix = detector.spellingFix(for: word, layouts: wordLayouts, exceptions: settings.exceptions) {
                 streak = nil
-                if boundary == .space {
-                    revertible = Revertible(correction: fix, isManual: false, boundary: boundary, switchedFrom: nil)
-                }
-                return .swallow([.erase(fix.original.count), .type(fix.replacement), .replayBoundary])
+                let conversion = Revertible(correction: fix, kind: .spellingFix, boundary: boundary, switchedFrom: nil)
+                if boundary == .space { revertible = conversion }
+                return .swallow([.erase(fix.original.count), .type(fix.replacement), .replayBoundary], rewrite: conversion.made)
             }
             guard var correction = layoutCorrection.map({ accented($0, quietApp: quietApp, layouts: layouts) }),
                   let wordLayouts
@@ -232,7 +241,10 @@ public struct Engine: Sendable {
                     let shown = word.map(wordLayouts.current.character(for:)).joined()
                     erasing = (word, wordLayouts.current, shown.count + 1)
                 }
-                return Response(disposition: .pass, actions: learnFromRetyping(retyped, layouts: wordLayouts))
+                let learned = learnFromRetyping(retyped, layouts: wordLayouts)
+                return Response(
+                    disposition: .pass, actions: learned,
+                    rewrite: learned.isEmpty ? nil : .made(.learnedFromRetyping, characters: 0))
             }
             var alsoCorrected = 0
             if let before,
@@ -250,15 +262,14 @@ public struct Engine: Sendable {
                 alsoCorrected = 1
             }
             let actions = correct(correction, activeLayoutID: layouts.current.id, alsoCorrected: alsoCorrected)
+            let switched = actions.contains(.selectLayout(correction.targetLayoutID))
+            let conversion = Revertible(
+                correction: correction, kind: .layoutCorrection, boundary: boundary,
+                switchedFrom: switched ? layouts.current.id : nil)
             // Only after Space is it known what the boundary left on screen: a replayed Return may
             // have sent a message, and Tab may have moved focus or inserted several spaces
-            if boundary == .space {
-                let switched = actions.contains(.selectLayout(correction.targetLayoutID))
-                revertible = Revertible(
-                    correction: correction, isManual: false, boundary: boundary,
-                    switchedFrom: switched ? layouts.current.id : nil)
-            }
-            return .swallow(actions)
+            if boundary == .space { revertible = conversion }
+            return .swallow(actions, rewrite: conversion.made)
         }
     }
 
@@ -316,7 +327,7 @@ public struct Engine: Sendable {
 
     /// Converts the word being typed, or else the word just finished, to the other script, switches
     /// to that script's layout, and learns the word.
-    private mutating func convertManually(_ layouts: ActiveLayouts, finished: (keys: [Key], layout: any Layout)?) -> [Action] {
+    private mutating func convertManually(_ layouts: ActiveLayouts, finished: (keys: [Key], layout: any Layout)?) -> Response {
         var correction: Correction
         let boundary: BoundaryKind?
         var wordBefore: (layout: any Layout, keyScripts: [Script?])?
@@ -324,7 +335,7 @@ public struct Engine: Sendable {
             guard let wordLayouts = trackedWordLayouts(layouts),
                   let conversion = detector.conversion(for: word, layouts: wordLayouts, recent: recentLayouts),
                   let target = layouts.enabled.first(where: { $0.id == conversion.targetLayoutID })
-            else { return [] }
+            else { return .pass }
             // The keys stay the word: on screen they now read as typed on the target layout
             wordBefore = (wordLayouts.current, keyScripts)
             wordLayout = target
@@ -336,14 +347,15 @@ public struct Engine: Sendable {
                       recent: recentLayouts) {
             (correction, boundary) = (conversion, .space)
         } else {
-            return []
+            return .pass
         }
 
         correction = accented(correction, quietApp: false, layouts: layouts)
         streak = nil
         let switched = layouts.current.id != correction.targetLayoutID
         revertible = Revertible(
-            correction: correction, isManual: true, boundary: boundary, switchedFrom: switched ? layouts.current.id : nil,
+            correction: correction, kind: .manualConversion, boundary: boundary,
+            switchedFrom: switched ? layouts.current.id : nil,
             wasLearned: settings.learnedWords.contains(correction.typedWord),
             wasException: settings.exceptions.contains(correction.typedWord), wordBefore: wordBefore)
         settings.learnedWords.insert(correction.typedWord)
@@ -352,7 +364,9 @@ public struct Engine: Sendable {
         var actions = replace(correction.original, with: correction.replacement, boundary: boundary)
         if switched { actions.append(.selectLayout(correction.targetLayoutID)) }
         actions.append(.recordLearnedWord(correction.typedWord))
-        return actions
+        return Response(
+            disposition: .pass, actions: actions,
+            rewrite: .made(.manualConversion, characters: correction.replacement.count))
     }
 
     /// Restores the original word and boundary and undoes the layout switch. An automatic

@@ -31,7 +31,8 @@ struct CorrectionTests {
     func russianWordTypedOnUS() {
         var typist = Typist(on: us)
         typist.type("ghbdtn", as: us)
-        #expect(typist.press(.boundary(.space)) == .swallow([.erase(6), .type("привет"), .replayBoundary]))
+        #expect(typist.press(.boundary(.space)) == .swallow(
+            [.erase(6), .type("привет"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 6)))
     }
 
     @Test("A known English word typed on U.S. passes")
@@ -45,7 +46,8 @@ struct CorrectionTests {
     func englishWordTypedOnRussian() {
         var typist = Typist(on: russianPC)
         typist.type("hello", as: us)
-        #expect(typist.press(.boundary(.space)) == .swallow([.erase(5), .type("hello"), .replayBoundary]))
+        #expect(typist.press(.boundary(.space)) == .swallow(
+            [.erase(5), .type("hello"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 5)))
     }
 
     @Test("A known Russian word typed on Russian – PC passes")
@@ -59,31 +61,37 @@ struct CorrectionTests {
     func otherBoundaries(_ boundary: BoundaryKind) {
         var typist = Typist(on: us)
         typist.type("ghbdtn", as: us)
-        #expect(typist.press(.boundary(boundary)) == .swallow([.erase(6), .type("привет"), .replayBoundary]))
+        #expect(typist.press(.boundary(boundary)) == .swallow(
+            [.erase(6), .type("привет"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 6)))
     }
 
     @Test("ghbdtn rfr becomes привет как, one word at a time")
     func consecutiveWords() {
         var typist = Typist(on: us)
         typist.type("ghbdtn", as: us)
-        #expect(typist.press(.boundary(.space)) == .swallow([.erase(6), .type("привет"), .replayBoundary]))
+        #expect(typist.press(.boundary(.space)) == .swallow(
+            [.erase(6), .type("привет"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 6)))
         typist.type("rfr", as: us)
         #expect(typist.press(.boundary(.space))
-            == .swallow([.erase(3), .type("как"), .replayBoundary, .selectLayout(russianPC.id)]))
+            == .swallow(
+                [.erase(3), .type("как"), .replayBoundary, .selectLayout(russianPC.id)],
+                rewrite: .made(.layoutCorrection, characters: 3)))
     }
 
     @Test("Keys on U.S. punctuation count as letters: ,eltn becomes будет")
     func punctuationKeysAreLetters() {
         var typist = Typist(on: us)
         typist.type(",eltn", as: us)
-        #expect(typist.press(.boundary(.space)) == .swallow([.erase(5), .type("будет"), .replayBoundary]))
+        #expect(typist.press(.boundary(.space)) == .swallow(
+            [.erase(5), .type("будет"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 5)))
     }
 
     @Test("Shift-typed keys stay capital: Ghbdtn becomes Привет")
     func capitalsPreserved() {
         var typist = Typist(on: us)
         typist.type("Ghbdtn", as: us)
-        #expect(typist.press(.boundary(.space)) == .swallow([.erase(6), .type("Привет"), .replayBoundary]))
+        #expect(typist.press(.boundary(.space)) == .swallow(
+            [.erase(6), .type("Привет"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 6)))
     }
 
     @Test("A word that is nonsense under every layout passes")
@@ -113,7 +121,8 @@ struct CorrectionTests {
         var typist = Typist(on: us)
         typist.type("ghbdtnn", as: us)
         #expect(typist.press(.backspace) == .pass)
-        #expect(typist.press(.boundary(.space)) == .swallow([.erase(6), .type("привет"), .replayBoundary]))
+        #expect(typist.press(.boundary(.space)) == .swallow(
+            [.erase(6), .type("привет"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 6)))
     }
 
     @Test("A reset forgets the keys typed before it", arguments: [ResetReason.mouse, .navigation, .chord, .missedInput])
@@ -122,7 +131,8 @@ struct CorrectionTests {
         typist.type("ghbdtn", as: us)
         #expect(typist.press(.reset(reason)) == .pass)
         typist.type("rfr", as: us)
-        #expect(typist.press(.boundary(.space)) == .swallow([.erase(3), .type("как"), .replayBoundary]))
+        #expect(typist.press(.boundary(.space)) == .swallow(
+            [.erase(3), .type("как"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 3)))
     }
 
     @Test("A current layout without a supported language never corrects")

@@ -31,9 +31,11 @@ struct RevertTests {
     @Test("Backspace right after a correction restores the word and boundary and records an exception")
     func revert() {
         var session = Session()
-        #expect(session.word("ghbdtn") == .swallow([.erase(6), .type("привет"), .replayBoundary]))
+        #expect(session.word("ghbdtn") == .swallow(
+            [.erase(6), .type("привет"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 6)))
         #expect(session.press(.backspace)
-            == .swallow([.erase(7), .type("ghbdtn"), .pressBoundary(.space), .recordException("ghbdtn")]))
+            == .swallow([.erase(7), .type("ghbdtn"), .pressBoundary(.space), .recordException("ghbdtn")],
+                        rewrite: .reverted(.layoutCorrection, characters: 6)))
     }
 
     @Test("A reverted word is never corrected again, in any case")
@@ -52,14 +54,16 @@ struct RevertTests {
         #expect(session.word("ghbdtn") == .pass)
         session.engine.settings.exceptions.remove("ghbdtn")
         _ = session.press(.reset(.mouse))
-        #expect(session.word("ghbdtn") == .swallow([.erase(6), .type("привет"), .replayBoundary]))
+        #expect(session.word("ghbdtn") == .swallow(
+            [.erase(6), .type("привет"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 6)))
     }
 
     @Test("Exceptions given in the settings are honoured")
     func seededExceptions() {
         var session = Session(settings: .init(exceptions: ["ghbdtn"]))
         #expect(session.word("ghbdtn,") == .pass)
-        #expect(session.word("rfr") == .swallow([.erase(3), .type("как"), .replayBoundary]))
+        #expect(session.word("rfr") == .swallow(
+            [.erase(3), .type("как"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 3)))
     }
 
     @Test("Return and Tab cannot be reverted: Backspace just edits", arguments: [BoundaryKind.return, .tab])
@@ -74,10 +78,12 @@ struct RevertTests {
     func revertUndoesSwitch() {
         var session = Session()
         _ = session.word("ghbdtn")
-        #expect(session.word("rfr") == .swallow([.erase(3), .type("как"), .replayBoundary, .selectLayout(russianPC.id)]))
+        #expect(session.word("rfr") == .swallow(
+            [.erase(3), .type("как"), .replayBoundary, .selectLayout(russianPC.id)],
+            rewrite: .made(.layoutCorrection, characters: 3)))
         #expect(session.press(.backspace) == .swallow([
             .erase(4), .type("rfr"), .pressBoundary(.space), .selectLayout(us.id), .recordException("rfr"),
-        ]))
+        ], rewrite: .reverted(.layoutCorrection, characters: 3)))
     }
 
     @Test("Backspace not right after a correction edits normally", arguments: [

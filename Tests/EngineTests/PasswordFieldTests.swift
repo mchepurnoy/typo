@@ -31,7 +31,8 @@ struct PasswordFieldTests {
         _ = engine.handle(.passwordField(false), layouts: layouts)
         // Neither "ghb" from before nor "dtn" from the password field is part of this word
         _ = type("rfr", &engine)
-        #expect(engine.handle(.boundary(.space), layouts: layouts) == .swallow([.erase(3), .type("как"), .replayBoundary]))
+        #expect(engine.handle(.boundary(.space), layouts: layouts) == .swallow(
+            [.erase(3), .type("как"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 3)))
     }
 
     @Test("Leaving the password field resumes corrections")
@@ -40,7 +41,8 @@ struct PasswordFieldTests {
         _ = engine.handle(.passwordField(true), layouts: layouts)
         _ = engine.handle(.passwordField(false), layouts: layouts)
         _ = type("ghbdtn", &engine)
-        #expect(engine.handle(.boundary(.space), layouts: layouts) == .swallow([.erase(6), .type("привет"), .replayBoundary]))
+        #expect(engine.handle(.boundary(.space), layouts: layouts) == .swallow(
+            [.erase(6), .type("привет"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 6)))
     }
 
     @Test("A password field also stops learning from retyping and retroactive corrections")
@@ -51,6 +53,7 @@ struct PasswordFieldTests {
         _ = engine.handle(.passwordField(true), layouts: layouts)
         _ = engine.handle(.passwordField(false), layouts: layouts)
         _ = type("ghbdtn", &engine)
-        #expect(engine.handle(.boundary(.space), layouts: layouts) == .swallow([.erase(6), .type("привет"), .replayBoundary]))
+        #expect(engine.handle(.boundary(.space), layouts: layouts) == .swallow(
+            [.erase(6), .type("привет"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 6)))
     }
 }

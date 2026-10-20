@@ -25,7 +25,8 @@ private func restore(
 }
 
 private func restored(_ typed: String, to word: String) -> Response {
-    .swallow([.erase(typed.count), .type(word), .replayBoundary])
+    .swallow(
+        [.erase(typed.count), .type(word), .replayBoundary], rewrite: .made(.accentRestoration, characters: word.count))
 }
 
 @Suite("Restoring ё, umlauts and accents")
@@ -94,7 +95,8 @@ struct AccentTests {
         for key in russianPC.keys(typing: "еще") { _ = engine.handle(.key(key), layouts: layouts) }
         _ = engine.handle(.boundary(.space), layouts: layouts)
         #expect(engine.handle(.backspace, layouts: layouts)
-            == .swallow([.erase(4), .type("еще"), .pressBoundary(.space), .recordException("еще")]))
+            == .swallow([.erase(4), .type("еще"), .pressBoundary(.space), .recordException("еще")],
+                        rewrite: .reverted(.accentRestoration, characters: 3)))
         for key in russianPC.keys(typing: "еще") { _ = engine.handle(.key(key), layouts: layouts) }
         #expect(engine.handle(.boundary(.space), layouts: layouts) == .pass)
     }
@@ -113,7 +115,8 @@ struct AccentTests {
         let layouts = ActiveLayouts(current: us, enabled: russianSetup)
         for key in russianPC.keys(typing: "еще") { _ = engine.handle(.key(key), layouts: layouts) }
         let response = engine.handle(.boundary(.space), layouts: layouts)
-        #expect(response == .swallow([.erase(3), .type("ещё"), .replayBoundary]))
+        #expect(response == .swallow(
+            [.erase(3), .type("ещё"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 3)))
     }
 
     @Test("Correctly typed held-out text is never changed except to add a certain ё")

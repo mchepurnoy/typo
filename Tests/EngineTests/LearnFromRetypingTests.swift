@@ -34,7 +34,9 @@ struct LearnFromRetypingTests {
         _ = session.press(.reset(.layoutShortcut), on: onUS)  // ⌃Space switches the layout
         session.type("сгенерируем", with: russianPC, on: onRU)
         let response = session.press(.boundary(.space), on: onRU)
-        #expect(response == Response(disposition: .pass, actions: [.recordLearnedWord("cutythbhetv")]))
+        #expect(response == Response(
+            disposition: .pass, actions: [.recordLearnedWord("cutythbhetv")],
+            rewrite: .made(.learnedFromRetyping, characters: 0)))
         #expect(session.engine.settings.learnedWords.contains("cutythbhetv"))
     }
 
@@ -58,7 +60,8 @@ struct LearnFromRetypingTests {
         _ = session.press(.reset(.mouse), on: onUS)
         session.type("cutythbhetv", with: us, on: onUS)
         #expect(session.press(.boundary(.space), on: onUS)
-            == .swallow([.erase(11), .type("сгенерируем"), .replayBoundary]))
+            == .swallow(
+                [.erase(11), .type("сгенерируем"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 11)))
     }
 
     @Test("⌥⌫ erasing the word counts as erasing it")

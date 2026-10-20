@@ -101,7 +101,8 @@ struct SpellCheckTests {
         let checker = FakeSpellChecker { word, language in language == .russian && word == "автошколы" ? true : nil }
         var engine = Engine(languageModels: BundledModels.all, spellChecker: checker, usesDetectorModel: false)
         #expect(press("автошколы", intendedOn: russianPC, typedOn: us, engine: &engine)
-            == .swallow([.erase(9), .type("автошколы"), .replayBoundary]))
+            == .swallow(
+                [.erase(9), .type("автошколы"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 9)))
     }
 
     @Test("A spell checker that accepts every re-reading cannot cause corrections on its own", arguments: [

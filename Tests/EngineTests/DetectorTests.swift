@@ -24,7 +24,8 @@ private func outcome(
 }
 
 private func corrected(_ text: String, typedAs typed: String) -> Response {
-    .swallow([.erase(typed.count), .type(text), .replayBoundary])
+    .swallow(
+        [.erase(typed.count), .type(text), .replayBoundary], rewrite: .made(.layoutCorrection, characters: text.count))
 }
 
 @Suite("Detector")

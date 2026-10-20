@@ -26,8 +26,8 @@ private struct Session {
     }
 }
 
-private func perform(_ actions: [Action]) -> Response {
-    Response(disposition: .pass, actions: actions)
+private func perform(_ actions: [Action], rewrite: Rewrite) -> Response {
+    Response(disposition: .pass, actions: actions, rewrite: rewrite)
 }
 
 @Suite("Manual conversion and learned words")
@@ -41,7 +41,7 @@ struct ManualConversionTests {
         #expect(session.press(.hotkey) == perform([
             .erase(typed.count + 1), .type(converted), .pressBoundary(.space), .selectLayout(russianPC.id),
             .recordLearnedWord(typed),
-        ]))
+        ], rewrite: .made(.manualConversion, characters: converted.count)))
         #expect(session.engine.settings.learnedWords.contains(typed))
     }
 
@@ -51,7 +51,7 @@ struct ManualConversionTests {
         session.type("ghbd")
         #expect(session.press(.hotkey) == perform([
             .erase(4), .type("прив"), .selectLayout(russianPC.id), .recordLearnedWord("ghbd"),
-        ]))
+        ], rewrite: .made(.manualConversion, characters: 4)))
     }
 
     @Test("With nothing to convert the hotkey does nothing")
@@ -69,7 +69,7 @@ struct ManualConversionTests {
         _ = session.word("ghbdtn")
         #expect(session.press(.hotkey) == perform([
             .erase(7), .type("ghbdtn"), .pressBoundary(.space), .recordException("ghbdtn"),
-        ]))
+        ], rewrite: .reverted(.layoutCorrection, characters: 6)))
     }
 
     @Test("The hotkey right after a manual conversion converts back and unlearns the word")
@@ -79,7 +79,7 @@ struct ManualConversionTests {
         _ = session.press(.hotkey)
         #expect(session.press(.hotkey) == perform([
             .erase(2), .type("b"), .pressBoundary(.space), .selectLayout(us.id), .forgetLearnedWord("b"),
-        ]))
+        ], rewrite: .reverted(.manualConversion, characters: 1)))
         #expect(session.engine.settings.learnedWords.isEmpty)
         #expect(session.engine.settings.exceptions.isEmpty)
     }
@@ -90,10 +90,12 @@ struct ManualConversionTests {
         _ = session.word("b")
         _ = session.press(.hotkey)
         _ = session.press(.reset(.mouse))
-        #expect(session.word("b") == .swallow([.erase(1), .type("и"), .replayBoundary]))
+        #expect(session.word("b") == .swallow(
+            [.erase(1), .type("и"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 1)))
 
         var seeded = Session(settings: .init(learnedWords: ["plan"]))
-        #expect(seeded.word("Plan") == .swallow([.erase(4), .type("Здфт"), .replayBoundary]))
+        #expect(seeded.word("Plan") == .swallow(
+            [.erase(4), .type("Здфт"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 4)))
     }
 
     @Test("Reverting a learned word's correction unlearns it and makes it an exception")
@@ -102,7 +104,7 @@ struct ManualConversionTests {
         _ = session.word("b")
         #expect(session.press(.backspace) == .swallow([
             .erase(2), .type("b"), .pressBoundary(.space), .forgetLearnedWord("b"), .recordException("b"),
-        ]))
+        ], rewrite: .reverted(.layoutCorrection, characters: 1)))
         #expect(session.engine.settings.learnedWords.isEmpty)
         #expect(session.engine.settings.exceptions == ["b"])
         #expect(session.word("b") == .pass)
@@ -237,6 +239,7 @@ struct ManualConversionUndoTests {
         _ = engine.handle(.hotkey, layouts: layouts)
         for key in us.keys(typing: "dtn") { _ = engine.handle(.key(key), layouts: layouts) }
         #expect(engine.handle(.boundary(.space), layouts: layouts)
-            == .swallow([.erase(6), .type("привет"), .replayBoundary]))
+            == .swallow(
+                [.erase(6), .type("привет"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 6)))
     }
 }

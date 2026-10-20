@@ -29,7 +29,8 @@ struct RetroactiveTests {
     func previousShortWord() {
         var session = Session()
         #expect(session.word("yt") == .pass)
-        #expect(session.word("ghbdtn") == .swallow([.erase(9), .type("не привет"), .replayBoundary]))
+        #expect(session.word("ghbdtn") == .swallow(
+            [.erase(9), .type("не привет"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 9)))
     }
 
     @Test("Both words count towards the layout switch")
@@ -37,14 +38,17 @@ struct RetroactiveTests {
         var session = Session(.init())
         _ = session.word("yt")
         #expect(session.word("ghbdtn")
-            == .swallow([.erase(9), .type("не привет"), .replayBoundary, .selectLayout(russianPC.id)]))
+            == .swallow(
+                [.erase(9), .type("не привет"), .replayBoundary, .selectLayout(russianPC.id)],
+                rewrite: .made(.layoutCorrection, characters: 9)))
     }
 
     @Test("A previous word that is fine as typed stays: plan ghbdtn")
     func previousWordFine() {
         var session = Session()
         _ = session.word("plan")
-        #expect(session.word("ghbdtn") == .swallow([.erase(6), .type("привет"), .replayBoundary]))
+        #expect(session.word("ghbdtn") == .swallow(
+            [.erase(6), .type("привет"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 6)))
     }
 
     @Test("Anything between the words but one Space prevents it", arguments: [
@@ -62,14 +66,16 @@ struct RetroactiveTests {
     func afterReturn() {
         var session = Session()
         _ = session.word("yt", then: .return)
-        #expect(session.word("ghbdtn") == .swallow([.erase(6), .type("привет"), .replayBoundary]))
+        #expect(session.word("ghbdtn") == .swallow(
+            [.erase(6), .type("привет"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 6)))
     }
 
     @Test("An exception is honoured for the previous word")
     func exception() {
         var session = Session(.init(switchThreshold: nil, exceptions: ["yt"]))
         _ = session.word("yt")
-        #expect(session.word("ghbdtn") == .swallow([.erase(6), .type("привет"), .replayBoundary]))
+        #expect(session.word("ghbdtn") == .swallow(
+            [.erase(6), .type("привет"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 6)))
     }
 
     @Test("Backspace right after restores both words and keeps the earlier one as typed from now on")
@@ -78,7 +84,8 @@ struct RetroactiveTests {
         _ = session.word("yt")
         _ = session.word("ghbdtn")
         #expect(session.press(.backspace)
-            == .swallow([.erase(10), .type("yt ghbdtn"), .pressBoundary(.space), .recordException("yt")]))
+            == .swallow([.erase(10), .type("yt ghbdtn"), .pressBoundary(.space), .recordException("yt")],
+                        rewrite: .reverted(.layoutCorrection, characters: 9)))
     }
 
     @Test("Two spaces, or a fixed typo, between the words prevent it")
@@ -86,7 +93,8 @@ struct RetroactiveTests {
         var spaces = Session()
         _ = spaces.word("yt")
         _ = spaces.press(.boundary(.space))
-        #expect(spaces.word("ghbdtn") == .swallow([.erase(6), .type("привет"), .replayBoundary]))
+        #expect(spaces.word("ghbdtn") == .swallow(
+            [.erase(6), .type("привет"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 6)))
 
         var typo = Session()
         typo.engine = Engine(
@@ -94,14 +102,16 @@ struct RetroactiveTests {
             settings: .init(switchThreshold: nil))
         _ = typo.word("yt")
         _ = typo.word("teh")
-        #expect(typo.word("ghbdtn") == .swallow([.erase(6), .type("привет"), .replayBoundary]))
+        #expect(typo.word("ghbdtn") == .swallow(
+            [.erase(6), .type("привет"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 6)))
     }
 
     @Test("A real word of 3+ letters is not converted after the fact: herb ghbdtn")
     func knownLongerWordStays() {
         var session = Session()
         _ = session.word("herb")
-        #expect(session.word("ghbdtn") == .swallow([.erase(6), .type("привет"), .replayBoundary]))
+        #expect(session.word("ghbdtn") == .swallow(
+            [.erase(6), .type("привет"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 6)))
     }
 
     @Test("Only the word right before is looked at: z yt ghbdtn → z не привет")
@@ -109,7 +119,8 @@ struct RetroactiveTests {
         var session = Session()
         _ = session.word("z")
         _ = session.word("yt")
-        #expect(session.word("ghbdtn") == .swallow([.erase(9), .type("не привет"), .replayBoundary]))
+        #expect(session.word("ghbdtn") == .swallow(
+            [.erase(9), .type("не привет"), .replayBoundary], rewrite: .made(.layoutCorrection, characters: 9)))
     }
 }
 
