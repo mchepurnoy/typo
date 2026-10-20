@@ -97,6 +97,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     let status = Status()
     let settings: SettingsStore
+    let statistics = StatisticsStore()
     let pauseHotkey: PauseHotkey
     let permissions = Permissions()
     let launchAtLogin = LaunchAtLogin()
@@ -141,10 +142,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let monitor = KeyboardMonitor(
                 languageModels: models, accentTables: accents, spellChecker: spellChecker, settings: settings)
             monitor.onRewrite = { [weak self] in self?.correctionFeedback() }
+            monitor.onRewriteReport = { [statistics] in statistics.record($0) }
             monitor.onModifierTap = { [pauseHotkey] in pauseHotkey.modifiersTapped($0) }
             self.monitor = monitor
             syncWithPermissions()
         }
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        // Counts made in the last minute are still only in memory
+        statistics.write()
     }
 
     func showOnboarding() {

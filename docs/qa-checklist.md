@@ -131,6 +131,11 @@ Type as fast as you can, without pausing at the spaces. Nothing may be lost, dup
 
 - [ ] Quit and relaunch: a learned word is still corrected (`defaults read app.typo.Typo learnedWords`)
 
+## Statistics
+
+- [ ] After a few corrections, wait a minute (or quit Typo): `defaults read app.typo.Typo statistics` shows one entry for today, keyed like `2026-10-20`, holding only numbers under `layoutCorrection`, `spellingFix`, `accentRestoration`, `manualConversion`, `learnedFromRetyping`, `reverts`, `characters` and `secondsSaved`: no words, no times
+- [ ] Corrections made just before quitting Typo are still counted after a relaunch
+
 ## Password fields
 
 - [ ] In a Safari login form's password field, typing `ghbdtn␣` is not corrected

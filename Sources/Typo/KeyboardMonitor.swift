@@ -55,6 +55,9 @@ final class KeyboardMonitor {
     private var keyTarget: (pid: Int64, bundleID: String?)?
     /// Called after typo rewrote a word (a correction, a conversion or a revert).
     var onRewrite: (() -> Void)?
+    /// Called with each rewrite the Engine reports making or taking back, for the statistics. Runs
+    /// inside the event tap, so it must only count.
+    var onRewriteReport: ((Rewrite) -> Void)?
     /// Called when modifiers were pressed together and released with nothing else in between
     /// (a modifier-only shortcut such as ⌃⌘), also while typo is paused or secure input is on.
     var onModifierTap: ((Modifiers) -> Void)?
@@ -207,7 +210,7 @@ final class KeyboardMonitor {
             capsLock: flags.contains(.maskAlphaShift),
             chord: !flags.isDisjoint(with: [.maskCommand, .maskControl, .maskAlternate]))
         let response = engine.handle(input, layouts: layouts.active)
-        run(response.actions, boundary: event)
+        run(response, boundary: event)
         return response.disposition == .pass
     }
 
@@ -292,12 +295,12 @@ final class KeyboardMonitor {
     // MARK: Fixes
 
     private func send(_ input: InputEvent) {
-        let response = engine.handle(input, layouts: layouts.active)
-        run(response.actions, boundary: nil)
+        run(engine.handle(input, layouts: layouts.active), boundary: nil)
     }
 
     /// Performs the Engine's actions; if any of them posted events, fences them.
-    private func run(_ actions: [Action], boundary: CGEvent?) {
+    private func run(_ response: Response, boundary: CGEvent?) {
+        let actions = response.actions
         var posted = false
         for action in actions {
             switch action {
@@ -324,6 +327,7 @@ final class KeyboardMonitor {
             }
         }
         if actions.contains(where: { if case .type = $0 { true } else { false } }) { onRewrite?() }
+        if let rewrite = response.rewrite { onRewriteReport?(rewrite) }
         if posted {
             postFence()
         } else if awaitedFence == nil, deferred.isEmpty {
