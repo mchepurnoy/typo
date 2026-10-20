@@ -19,6 +19,7 @@ final class SettingsStore {
         static let fixesTypos = "fixesTypos"
         static let restoresAccents = "restoresAccents"
         static let pauseShortcut = "pauseShortcut"
+        static let wordsInAddedOrder = "wordsInAddedOrder"
     }
 
     /// The modifier whose double tap is the manual-conversion hotkey.
@@ -129,9 +130,19 @@ final class SettingsStore {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        // Earlier versions stored both lists sorted; read as they are, those words count as the oldest
-        exceptions = Self.uniqued(defaults.stringArray(forKey: Key.exceptions) ?? [])
-        learnedWords = Self.uniqued(defaults.stringArray(forKey: Key.learnedWords) ?? [])
+        var storedExceptions = Self.uniqued(defaults.stringArray(forKey: Key.exceptions) ?? [])
+        var storedLearnedWords = Self.uniqued(defaults.stringArray(forKey: Key.learnedWords) ?? [])
+        if !defaults.bool(forKey: Key.wordsInAddedOrder) {
+            // Earlier versions stored both lists sorted, not in the order words were added: those words
+            // count as the oldest, and are shown A to Z after the newer ones
+            storedExceptions.sort(by: >)
+            storedLearnedWords.sort(by: >)
+            defaults.set(storedExceptions, forKey: Key.exceptions)
+            defaults.set(storedLearnedWords, forKey: Key.learnedWords)
+            defaults.set(true, forKey: Key.wordsInAddedOrder)
+        }
+        exceptions = storedExceptions
+        learnedWords = storedLearnedWords
         hotkey = defaults.string(forKey: Key.hotkey).flatMap(Hotkey.init(rawValue:)) ?? .shift
         isPaused = defaults.bool(forKey: Key.isPaused)
         let storedShortcut = defaults.object(forKey: Key.pauseShortcut)
