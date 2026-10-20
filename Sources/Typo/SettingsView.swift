@@ -140,56 +140,129 @@ private struct ShortcutRecorder: View {
     }
 }
 
+/// One list at a time, newest first, with a search. There can be thousands of words, so their order
+/// and conversions are worked out when a list or the enabled layouts change, never on a redraw, and
+/// only the newest are shown until asked.
 private struct WordsTab: View {
+    private enum WordList { case exceptions, learnedWords }
+
+    /// Words shown before "Show all".
+    private static let shownFirst = 50
+
     let settings: SettingsStore
-    @State private var newException = ""
-    @State private var layouts: [SystemLayout] = []
-    @State private var keyMaps: [String: [String: Key]] = [:]
+    @State private var shown = WordList.exceptions
+    @State private var search = ""
+    @State private var showsAll = false
+    @State private var conversion = WordConversion(layouts: [])
+    /// Both lists newest first, each word with its conversion.
+    @State private var exceptions: [ListedWord] = []
+    @State private var learnedWords: [ListedWord] = []
 
     var body: some View {
-        Form {
-            Section {
-                ForEach(settings.exceptions.sorted(), id: \.self) { word in
-                    WordRow(word: word, conversion: conversion(of: word), isKept: true) { settings.removeException(word) }
-                }
-                HStack {
-                    TextField("Add a word", text: $newException)
-                        .onSubmit(add)
-                    Button("Add", action: add).disabled(newException.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            } header: {
-                Text("Exceptions")
-            } footer: {
-                Text("Kept as typed, never converted. Backspace right after a correction adds the word here.")
+        let words = matching(shown == .exceptions ? exceptions : learnedWords)
+        VStack(alignment: .leading, spacing: 10) {
+            Picker("Words", selection: $shown) {
+                Text("Exceptions").tag(WordList.exceptions)
+                Text("Learned words").tag(WordList.learnedWords)
             }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            TextField("Search", text: $search)
+                .textFieldStyle(.roundedBorder)
 
-            Section {
-                if settings.learnedWords.isEmpty {
+            List {
+                // A List is lazy: with "Show all", only the rows scrolled to are made
+                ForEach(showsAll ? words[...] : words.prefix(Self.shownFirst)) { listed in
+                    WordRow(word: listed.word, conversion: listed.conversion, isKept: shown == .exceptions) {
+                        remove(listed.word)
+                    }
+                }
+                if !showsAll, words.count > Self.shownFirst {
+                    Button("Show all (\(words.count))") { showsAll = true }
+                        .buttonStyle(.link)
+                }
+                if words.isEmpty, search.isEmpty {
                     Text("None yet").foregroundStyle(.secondary)
+                } else if words.isEmpty {
+                    Text("No matches").foregroundStyle(.secondary)
                 }
-                ForEach(settings.learnedWords.sorted(), id: \.self) { word in
-                    WordRow(word: word, conversion: conversion(of: word), isKept: false) { settings.forgetLearnedWord(word) }
-                }
-            } header: {
-                Text("Learned words")
-            } footer: {
+            }
+            .listStyle(.bordered(alternatesRowBackgrounds: true))
+
+            if shown == .exceptions {
+                AddWordField(settings: settings)
+                Text("Kept as typed, never converted. Backspace right after a correction adds the word here.")
+                    .font(.caption).foregroundStyle(.secondary)
+            } else {
                 Text("Always converted. Converting a word with the hotkey adds it here.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
         }
-        .formStyle(.grouped)
-        .onAppear {
-            layouts = SystemLayouts.enabled()
-            keyMaps = Dictionary(uniqueKeysWithValues: layouts.map { ($0.id, SystemLayouts.keyMap(of: $0)) })
+        .padding()
+        .onAppear(perform: readLayouts)
+        .onReceive(DistributedNotificationCenter.default().publisher(
+            for: Notification.Name(kTISNotifyEnabledKeyboardInputSourcesChanged as String))) { _ in
+            readLayouts()
         }
+        .onChange(of: settings.exceptions) { exceptions = listed(settings.exceptions, by: conversion) }
+        .onChange(of: settings.learnedWords) { learnedWords = listed(settings.learnedWords, by: conversion) }
+        .onChange(of: shown) { showsAll = false }
     }
 
-    private func conversion(of word: String) -> String? {
-        SystemLayouts.conversion(of: word, among: layouts, keyMaps: keyMaps)
+    /// The words whose typed form or conversion contains the search, ignoring case.
+    private func matching(_ words: [ListedWord]) -> [ListedWord] {
+        let query = search.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return query.isEmpty ? words : words.filter { $0.searchText.contains(query) }
+    }
+
+    private func readLayouts() {
+        let conversion = WordConversion(layouts: SystemLayouts.enabled())
+        self.conversion = conversion
+        exceptions = listed(settings.exceptions, by: conversion)
+        learnedWords = listed(settings.learnedWords, by: conversion)
+    }
+
+    /// The store keeps the oldest first; the tab shows the newest first.
+    private func listed(_ words: [String], by conversion: WordConversion) -> [ListedWord] {
+        words.reversed().map { ListedWord(word: $0, conversion: conversion($0)) }
+    }
+
+    private func remove(_ word: String) {
+        if shown == .exceptions { settings.removeException(word) } else { settings.forgetLearnedWord(word) }
+    }
+}
+
+private struct ListedWord: Identifiable {
+    let word: String
+    let conversion: String?
+    /// The word and its conversion, lowercased, for the search.
+    let searchText: String
+    var id: String { word }
+
+    init(word: String, conversion: String?) {
+        self.word = word
+        self.conversion = conversion
+        searchText = (conversion.map { "\(word)\n\($0)" } ?? word).lowercased()
+    }
+}
+
+/// A view of its own, so typing a word redraws the field and not the list.
+private struct AddWordField: View {
+    let settings: SettingsStore
+    @State private var word = ""
+
+    var body: some View {
+        HStack {
+            TextField("Add a word", text: $word)
+                .textFieldStyle(.roundedBorder)
+                .onSubmit(add)
+            Button("Add", action: add).disabled(word.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        }
     }
 
     private func add() {
-        settings.addException(newException)
-        newException = ""
+        settings.addException(word)
+        word = ""
     }
 }
 

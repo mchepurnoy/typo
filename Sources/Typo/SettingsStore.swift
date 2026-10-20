@@ -30,20 +30,21 @@ final class SettingsStore {
     /// Called with the Engine's view of the settings after every change.
     @ObservationIgnored var onChange: ((Engine.Settings) -> Void)?
 
-    /// Lowercased typed words never corrected.
-    private(set) var exceptions: Set<String> {
+    /// Lowercased typed words never corrected, oldest first. The order they were added in is all
+    /// the settings need to show the newest first, so no date is kept (ADR 0003).
+    private(set) var exceptions: [String] {
         didSet {
             guard exceptions != oldValue else { return }
-            defaults.set(exceptions.sorted(), forKey: Key.exceptions)
+            defaults.set(exceptions, forKey: Key.exceptions)
             onChange?(engineSettings)
         }
     }
 
-    /// Lowercased typed words always corrected, learned from manual conversion.
-    private(set) var learnedWords: Set<String> {
+    /// Lowercased typed words always corrected, learned from manual conversion; oldest first.
+    private(set) var learnedWords: [String] {
         didSet {
             guard learnedWords != oldValue else { return }
-            defaults.set(learnedWords.sorted(), forKey: Key.learnedWords)
+            defaults.set(learnedWords, forKey: Key.learnedWords)
             onChange?(engineSettings)
         }
     }
@@ -128,8 +129,9 @@ final class SettingsStore {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        exceptions = Set(defaults.stringArray(forKey: Key.exceptions) ?? [])
-        learnedWords = Set(defaults.stringArray(forKey: Key.learnedWords) ?? [])
+        // Earlier versions stored both lists sorted; read as they are, those words count as the oldest
+        exceptions = Self.uniqued(defaults.stringArray(forKey: Key.exceptions) ?? [])
+        learnedWords = Self.uniqued(defaults.stringArray(forKey: Key.learnedWords) ?? [])
         hotkey = defaults.string(forKey: Key.hotkey).flatMap(Hotkey.init(rawValue:)) ?? .shift
         isPaused = defaults.bool(forKey: Key.isPaused)
         let storedShortcut = defaults.object(forKey: Key.pauseShortcut)
@@ -156,24 +158,25 @@ final class SettingsStore {
 
     var engineSettings: Engine.Settings {
         Engine.Settings(
-            switchThreshold: switchThreshold, exceptions: exceptions, learnedWords: learnedWords, isPaused: isPaused,
+            switchThreshold: switchThreshold, exceptions: Set(exceptions), learnedWords: Set(learnedWords), isPaused: isPaused,
             excludedApps: excludedApps, fixesTypos: fixesTypos, typoFixExcludedApps: Self.typoFixExcludedApps,
             restoresAccents: restoresAccents)
     }
 
-    /// An exception is never learned at the same time, and the other way round.
+    /// An exception is never learned at the same time, and the other way round. A word added again
+    /// moves to the newest place.
     func addException(_ word: String) {
         let word = Self.normalize(word)
         guard !word.isEmpty else { return }
-        learnedWords.remove(word)
-        exceptions.insert(word)
+        learnedWords.removeAll { $0 == word }
+        exceptions = exceptions.filter { $0 != word } + [word]
     }
 
     func learn(_ word: String) {
         let word = Self.normalize(word)
         guard !word.isEmpty else { return }
-        exceptions.remove(word)
-        learnedWords.insert(word)
+        exceptions.removeAll { $0 == word }
+        learnedWords = learnedWords.filter { $0 != word } + [word]
     }
 
     func exclude(appWithBundleID bundleID: String) {
@@ -185,11 +188,19 @@ final class SettingsStore {
     }
 
     func forgetLearnedWord(_ word: String) {
-        learnedWords.remove(Self.normalize(word))
+        let word = Self.normalize(word)
+        learnedWords.removeAll { $0 == word }
     }
 
     func removeException(_ word: String) {
-        exceptions.remove(Self.normalize(word))
+        let word = Self.normalize(word)
+        exceptions.removeAll { $0 == word }
+    }
+
+    /// Each word once, at its last (newest) place: a stored list may have been edited with `defaults write`.
+    private static func uniqued(_ words: [String]) -> [String] {
+        var seen = Set<String>()
+        return words.reversed().filter { seen.insert($0).inserted }.reversed()
     }
 
     /// The Engine records words lowercased; words typed into the settings are trimmed too.

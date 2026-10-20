@@ -393,6 +393,16 @@
         }
       }
     },
+    "No matches": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ничего не найдено"
+          }
+        }
+      }
+    },
     "None yet": {
       "localizations": {
         "ru": {
@@ -533,6 +543,16 @@
         }
       }
     },
+    "Search": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Поиск"
+          }
+        }
+      }
+    },
     "Set Up Permissions…": {
       "localizations": {
         "ru": {
@@ -569,6 +589,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Shift"
+          }
+        }
+      }
+    },
+    "Show all (%lld)": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показать все (%lld)"
           }
         }
       }

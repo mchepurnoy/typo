@@ -37,6 +37,9 @@ Setup: turn off System Settings → Keyboard → Input Sources → "Automaticall
 - [ ] Changing the hotkey to "Double-tap Option": double Shift does nothing, double Option converts the last word
 - [ ] Switch threshold 3: the layout switches after the third correction in a row; turning automatic switching off never switches
 - [ ] Words: removing `ghbdtn` from Exceptions makes `ghbdtn␣` correct again; adding a word by hand stops it being corrected; removing a learned word stops its automatic correction
+- [ ] Words shows one list at a time (Exceptions | Learned words), newest first: add `aaa`, then `bbb` → `bbb` is on top; adding `aaa` again moves it back to the top. Searching `cegth` or `супер` (any case) finds the word `cegth`; the search applies to whichever list is shown
+- [ ] Upgrade: exceptions saved by 0.2.1 or earlier are all still listed, after the ones added since
+- [ ] Thousands of words: quit Typo, back up its settings with `defaults export app.typo.Typo ~/typo-settings.plist`, write 10 000 exceptions with `defaults write app.typo.Typo exceptions -array $(python3 -c 'import random, string; print(" ".join("".join(random.choices(string.ascii_lowercase, k=random.randint(4, 10))) for _ in range(10000)))')`, launch Typo. Settings → Words opens without a visible pause and shows 50 words and "Show all (N)"; typing in the search field and in "Add a word" stays smooth; "Show all" scrolls smoothly to the end; removing a word is immediate. Afterwards quit Typo and restore with `defaults import app.typo.Typo ~/typo-settings.plist`
 - [ ] Layouts lists every enabled layout, with U.S. and Russian – PC marked supported and an unsupported one (e.g. Ukrainian) marked "Not supported"
 
 ## Correction

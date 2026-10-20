@@ -140,20 +140,36 @@ extension SystemLayouts {
     static func enabled() -> [SystemLayout] {
         read().0.enabled.compactMap { $0 as? SystemLayout }
     }
+}
 
-    /// What `word`, as typed on one enabled layout, reads as on an enabled layout of another
-    /// script: "cegth" → "супер". For showing exceptions and learned words; `nil` if no layout
-    /// types the whole word.
-    /// - Parameter keyMaps: `keyMap(of:)` for each layout, by ID, computed once by the caller.
-    static func conversion(of word: String, among layouts: [SystemLayout], keyMaps: [String: [String: Key]]) -> String? {
-        for source in layouts {
+/// What a word, as typed on one enabled layout, reads as on an enabled layout of another script:
+/// "cegth" → "супер". For showing exceptions and learned words. Every key is read once, when this
+/// is made, so converting thousands of words is only dictionary lookups.
+struct WordConversion {
+    /// For each layout of a supported language, in order: the key typing each of its characters,
+    /// and what each of those keys types on the first layout of another script.
+    private let readings: [(keys: [String: Key], target: [Key: String])]
+
+    init(layouts: [SystemLayout]) {
+        readings = layouts.compactMap { source in
             guard let script = source.language?.script,
-                  let target = layouts.first(where: { $0.language.map { $0.script != script } ?? false }),
-                  let keys = keyMaps[source.id]
-            else { continue }
-            let typed = word.map { keys[String($0)] }
-            guard !typed.contains(where: { $0 == nil }) else { continue }
-            return typed.map { target.character(for: $0!) }.joined()
+                  let target = layouts.first(where: { $0.language.map { $0.script != script } ?? false })
+            else { return nil }
+            let keys = SystemLayouts.keyMap(of: source)
+            let typed = Dictionary(keys.values.map { ($0, target.character(for: $0)) }, uniquingKeysWith: { first, _ in first })
+            return (keys, typed)
+        }
+    }
+
+    /// `nil` if no layout types the whole word.
+    func callAsFunction(_ word: String) -> String? {
+        reading: for (keys, target) in readings {
+            var converted = ""
+            for character in word {
+                guard let key = keys[String(character)], let typed = target[key] else { continue reading }
+                converted += typed
+            }
+            return converted
         }
         return nil
     }

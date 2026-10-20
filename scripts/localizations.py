@@ -100,6 +100,9 @@ TRANSLATIONS = {
         "Расставлять ё, умлауты и акценты, где это однозначно (еще → ещё, konnen → können)",
     "Play a sound on each correction": "Звук при каждом исправлении",
     # Settings: Words
+    "Search": "Поиск",
+    "Show all (%lld)": "Показать все (%lld)",
+    "No matches": "Ничего не найдено",
     "Add a word": "Добавить слово",
     "Add": "Добавить",
     "Exceptions": "Исключения",
