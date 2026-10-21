@@ -1,14 +1,27 @@
 #!/bin/bash
 # Packs a test build to send to someone: build/Typo-<version>-test.zip with Typo.app (Apple silicon
-# + Intel) and README.txt explaining how to open an app that is not notarized.
+# + Intel), Developer ID-signed and notarized, and README.txt.
+# Needs the Developer ID Application certificate in the keychain and notarytool credentials saved as
+# the keychain profile typo-notary (see README.md).
 # Usage: scripts/package-for-testing.sh
+#        CODESIGN_ID="Developer ID Application: …" NOTARY_PROFILE=… scripts/package-for-testing.sh
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-UNIVERSAL=1 scripts/build-app.sh
+# codesign takes any unique part of the certificate name
+CODESIGN_ID="${CODESIGN_ID:-Developer ID Application}" UNIVERSAL=1 scripts/build-app.sh
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Support/Info.plist)
 STAGE=build/package/Typo
 ZIP=build/Typo-$VERSION-test.zip
+
+# Apple checks the app, then its ticket is stapled on so Gatekeeper lets it open without asking
+NOTARY_ZIP=build/Typo-notarize.zip
+rm -f "$NOTARY_ZIP"
+ditto -c -k --keepParent build/Typo.app "$NOTARY_ZIP"
+xcrun notarytool submit "$NOTARY_ZIP" --keychain-profile "${NOTARY_PROFILE:-typo-notary}" --wait
+rm "$NOTARY_ZIP"
+xcrun stapler staple build/Typo.app
+spctl --assess --type execute --verbose build/Typo.app
 
 rm -rf build/package "$ZIP"
 mkdir -p "$STAGE"

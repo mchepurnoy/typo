@@ -11,13 +11,16 @@ Apple Silicon, и Intel.
 
 1) Распакуйте архив и перетащите Typo.app в папку «Программы».
 
-2) Сборка тестовая и не подписана сертификатом Apple, поэтому при первом запуске
-   macOS скажет, что не может проверить программу. Это нормально:
-   - дважды щёлкните Typo.app и в окне нажмите «Готово»;
-   - откройте Системные настройки → Конфиденциальность и безопасность,
-     прокрутите вниз и нажмите «Всё равно открыть» напротив Typo, подтвердите.
-   Или одной командой в Терминале:
-       xattr -dr com.apple.quarantine /Applications/Typo.app
+2) Если у вас уже стояла тестовая сборка Typo до 21 октября 2026: те сборки
+   были подписаны иначе, и macOS не узнает новую. Переключатели в настройках
+   останутся включёнными, но Typo их не увидит и будет ждать разрешений.
+   Один раз, до запуска новой версии, выполните в Терминале:
+       tccutil reset Accessibility app.typo.Typo
+       tccutil reset ListenEvent app.typo.Typo
+   Дальнейшие обновления разрешения не сбрасывают.
+
+   Typo подписан и проверен Apple, поэтому откроется как обычная программа:
+   macOS только спросит, точно ли открыть скачанное из интернета.
 
 3) Откроется окно «Настройка Typo». Разрешите два пункта, кнопки открывают
    нужные разделы настроек:
@@ -106,9 +109,10 @@ Typo видит нажатия клавиш, но держит в памяти �
 
 ---------------------------------------------------------------------------
 English, briefly: Typo fixes words typed in the wrong keyboard layout when you
-press Space. macOS 14+. Drag Typo.app to Applications; the build is not
-notarized, so allow it once in System Settings → Privacy & Security → "Open
-Anyway" (or: xattr -dr com.apple.quarantine /Applications/Typo.app). Allow
+press Space. macOS 14+. Drag Typo.app to Applications; it is signed and notarized.
+If you had a test build from before 21 October 2026, run once before launching:
+tccutil reset Accessibility app.typo.Typo; tccutil reset ListenEvent
+app.typo.Typo (the old grants stay switched on but no longer apply). Allow
 Accessibility and Input Monitoring in the "Set Up Typo" window. Backspace right
 after a correction undoes it; double-tap Shift converts the last word by hand;
 press and release Control+Command to pause or resume. Settings → Statistics

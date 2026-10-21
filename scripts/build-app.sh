@@ -2,6 +2,7 @@
 # Builds build/Typo.app from the Swift package.
 # Usage: scripts/build-app.sh                                  ad-hoc signed, this Mac's architecture
 #        CODESIGN_ID="Apple Development: …" scripts/build-app.sh   stable identity, Accessibility grant survives rebuilds
+#                                                               (signed with hardened runtime, ready to notarize)
 #        UNIVERSAL=1 scripts/build-app.sh                       Apple silicon + Intel
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -24,9 +25,11 @@ cp LanguageModels/LICENSE-eyo-kernel.txt "$APP/Contents/Resources/"
 # Interface strings: en.lproj and ru.lproj from the String Catalog
 xcrun xcstringstool compile Sources/Typo/Resources/Localizable.xcstrings --output-directory "$APP/Contents/Resources"
 cp Support/Info.plist "$APP/Contents/Info.plist"
-codesign --force --sign "${CODESIGN_ID:--}" "$APP"
-
-if [ -z "${CODESIGN_ID:-}" ]; then
+if [ -n "${CODESIGN_ID:-}" ]; then
+  # Hardened runtime and a secure timestamp: notarization requires both
+  codesign --force --options runtime --timestamp --sign "$CODESIGN_ID" "$APP"
+else
+  codesign --force --sign - "$APP"
   # An ad-hoc signature changes every build, so a stale grant would look enabled but not work.
   tccutil reset Accessibility "$BUNDLE_ID" >/dev/null 2>&1 || true
   tccutil reset ListenEvent "$BUNDLE_ID" >/dev/null 2>&1 || true

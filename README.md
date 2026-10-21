@@ -30,7 +30,16 @@ CODESIGN_ID="Apple Development: you@example.com (TEAMID)" scripts/build-app.sh
 scripts/package-for-testing.sh   # build/Typo-<version>-test.zip: Apple silicon + Intel, with README.txt
 ```
 
-The build is ad-hoc signed and not notarized (that needs a paid Developer ID, ticket 15), so on the other Mac it has to be allowed once in System Settings → Privacy & Security → "Open Anyway"; `README.txt` in the zip explains it, in Russian and English.
+The build is signed with a Developer ID and notarized, so it opens on another Mac without Gatekeeper warnings, and a newer build keeps the Accessibility and Input Monitoring grants. `README.txt` in the zip explains installing, in Russian and English. The script needs, once per Mac:
+
+- the **Developer ID Application** certificate with its private key in the keychain: `security find-identity -v -p codesigning` lists it;
+- notarization credentials saved as the keychain profile `typo-notary`, from an app-specific password of an Apple ID in the team:
+
+  ```sh
+  xcrun notarytool store-credentials typo-notary --apple-id you@example.com --team-id TEAMID --password xxxx-xxxx-xxxx-xxxx
+  ```
+
+`CODESIGN_ID` and `NOTARY_PROFILE` override the certificate and the profile.
 
 ## App icon
 
