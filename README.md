@@ -18,7 +18,9 @@ open build/Typo.app
 
 typo lives in the menu bar (keyboard icon) and has no Dock icon. On first launch macOS asks for **Accessibility** access: allow it in System Settings → Privacy & Security → Accessibility. typo starts working as soon as access is granted; no relaunch needed.
 
-The default build is ad-hoc signed, whose signature changes on every build, so the script resets typo's Accessibility grant each time and you grant it again. To keep the grant across rebuilds, sign with a stable identity (a free Personal Team certificate works):
+This build is **Typo Dev** (`app.typo.Typo.dev`): its permissions, settings and login item are separate from an installed Typo, it never checks for updates and is not opened at login. Quit an installed Typo while testing it, or both correct every word.
+
+The default build is ad-hoc signed, whose signature changes on every build, so the script resets Typo Dev's Accessibility grant each time and you grant it again. To keep the grant across rebuilds, sign with a stable identity (a free Personal Team certificate works):
 
 ```sh
 CODESIGN_ID="Apple Development: you@example.com (TEAMID)" scripts/build-app.sh

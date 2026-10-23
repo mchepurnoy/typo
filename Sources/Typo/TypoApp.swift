@@ -75,6 +75,12 @@ private struct MenuContent: View {
     }
 }
 
+extension Bundle {
+    /// scripts/build-app.sh gives builds for this Mac their own bundle ID (app.typo.Typo.dev), so their
+    /// permissions, settings and login item never mix with an installed release.
+    var isDevBuild: Bool { bundleIdentifier?.hasSuffix(".dev") == true }
+}
+
 @MainActor
 @Observable
 final class Status {
@@ -124,7 +130,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)  // Info.plist sets LSUIElement too; this covers `swift run`
-        launchAtLogin.enableOnFirstLaunch()
+        // A dev build at login would run next to the installed Typo, and both would correct every word
+        if !Bundle.main.isDevBuild { launchAtLogin.enableOnFirstLaunch() }
         pauseHotkey.start()
         permissions.onTick = { [weak self] in
             self?.syncWithPermissions()

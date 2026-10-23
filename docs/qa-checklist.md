@@ -2,22 +2,22 @@
 
 The macOS adapter and app shell have no unit tests; run this checklist before merging changes to `Sources/Typo` and before each release. Tickets that add adapter or app behaviour add their checks here.
 
-Setup: turn off System Settings → Keyboard → Input Sources → "Automatically switch to a document's input source" (it can undo typo's layout switch). Build with `scripts/build-app.sh`, enable the **U.S.** and **Russian – PC** layouts, start on U.S. unless a check says otherwise. `␣` is Space, `⏎` is Return, `⇥` is Tab.
+Setup: turn off System Settings → Keyboard → Input Sources → "Automatically switch to a document's input source" (it can undo typo's layout switch). Build with `scripts/build-app.sh`: it is "Typo Dev" (`app.typo.Typo.dev`), with its own permissions and settings; quit an installed Typo first, or both correct every word. Enable the **U.S.** and **Russian – PC** layouts, start on U.S. unless a check says otherwise. `␣` is Space, `⏎` is Return, `⇥` is Tab.
 
 ## App shell
 
 - [ ] `scripts/build-app.sh` succeeds from a clean checkout
 - [ ] `open build/Typo.app` shows a keyboard icon in the menu bar and no Dock icon
-- [ ] The menu has **Pause Typo**, **Settings…** (⌘,), **About Typo**, **Check for Updates…** and **Quit Typo** (⌘Q); Quit quits the app
+- [ ] The menu has **Pause Typo**, **Settings…** (⌘,), **About Typo**, **Check for Updates…** (disabled in Typo Dev) and **Quit Typo** (⌘Q); Quit quits the app
 - [ ] Console.app filtered on process `Typo` shows no "language model … not loaded" errors
 
 ## Permissions and onboarding
 
-- [ ] Fresh install (`tccutil reset Accessibility app.typo.Typo; tccutil reset ListenEvent app.typo.Typo; defaults delete app.typo.Typo`): the "Set Up Typo" window opens and shows both permissions as missing
+- [ ] Fresh install (`tccutil reset Accessibility app.typo.Typo.dev; tccutil reset ListenEvent app.typo.Typo.dev; defaults delete app.typo.Typo.dev`): the "Set Up Typo" window opens and shows both permissions as missing
 - [ ] Each "Open System Settings…" button opens the right pane (Accessibility, Input Monitoring)
 - [ ] Granting Accessibility turns its row green within a second and corrections start without relaunching
 - [ ] Revoking Accessibility while Typo runs: the menu says "Accessibility permission was turned off." and nothing is corrected; granting it back resumes corrections
-- [ ] Settings → General → "Launch at login" is on after the first launch; turning it off and rebooting does not start Typo; turning it on and rebooting does
+- [ ] Typo Dev's "Launch at login" stays off after the first launch. A release's (`DISTRIBUTION=1 scripts/build-app.sh`) is on after the first launch; turning it off and rebooting does not start Typo; turning it on and rebooting does
 
 ## Pause, excluded apps and feedback
 
@@ -38,8 +38,8 @@ Setup: turn off System Settings → Keyboard → Input Sources → "Automaticall
 - [ ] Switch threshold 3: the layout switches after the third correction in a row; turning automatic switching off never switches
 - [ ] Words: removing `ghbdtn` from Exceptions makes `ghbdtn␣` correct again; adding a word by hand stops it being corrected; removing a learned word stops its automatic correction
 - [ ] Words shows one list at a time (Exceptions | Learned words), newest first: add `aaa`, then `bbb` → `bbb` is on top; adding `aaa` again moves it back to the top. Searching `cegth` or `супер` (any case) finds the word `cegth`; the search applies to whichever list is shown
-- [ ] Upgrade: exceptions saved by 0.2.1 or earlier are all still listed, A to Z, after the ones added since (to repeat: `defaults delete app.typo.Typo wordsInAddedOrder` and relaunch)
-- [ ] Thousands of words: quit Typo, back up its settings with `defaults export app.typo.Typo ~/typo-settings.plist`, write 10 000 exceptions with `defaults write app.typo.Typo exceptions -array $(python3 -c 'import random, string; print(" ".join("".join(random.choices(string.ascii_lowercase, k=random.randint(4, 10))) for _ in range(10000)))')`, launch Typo. Settings → Words opens without a visible pause and shows 50 words and "Show all (N)"; typing in the search field and in "Add a word" stays smooth; "Show all" scrolls smoothly to the end; removing a word is immediate. Afterwards quit Typo and restore with `defaults import app.typo.Typo ~/typo-settings.plist`
+- [ ] Upgrade: exceptions saved by 0.2.1 or earlier are all still listed, A to Z, after the ones added since (to repeat: `defaults delete app.typo.Typo.dev wordsInAddedOrder` and relaunch)
+- [ ] Thousands of words: quit Typo, back up its settings with `defaults export app.typo.Typo.dev ~/typo-settings.plist`, write 10 000 exceptions with `defaults write app.typo.Typo.dev exceptions -array $(python3 -c 'import random, string; print(" ".join("".join(random.choices(string.ascii_lowercase, k=random.randint(4, 10))) for _ in range(10000)))')`, launch Typo. Settings → Words opens without a visible pause and shows 50 words and "Show all (N)"; typing in the search field and in "Add a word" stays smooth; "Show all" scrolls smoothly to the end; removing a word is immediate. Afterwards quit Typo and restore with `defaults import app.typo.Typo.dev ~/typo-settings.plist`
 - [ ] Layouts lists every enabled layout, with U.S. and Russian – PC marked supported and an unsupported one (e.g. Ukrainian) marked "Not supported"
 
 ## Correction
@@ -114,7 +114,7 @@ Type as fast as you can, without pausing at the spaces. Nothing may be lost, dup
 | `ghbdtn rfr␣` (layout switches) then ⌫ → `привет rfr ` (only the last correction is reverted) and the layout is back to U.S. | | | | | |
 | `ghbdtn⏎` or `ghbdtn⇥` then ⌫ → an ordinary Backspace (no revert after Return or Tab) | | | | | |
 
-- [ ] Quit and relaunch typo: a word reverted before (`ghbdtn`) is still left alone (`defaults read app.typo.Typo exceptions` lists it)
+- [ ] Quit and relaunch typo: a word reverted before (`ghbdtn`) is still left alone (`defaults read app.typo.Typo.dev exceptions` lists it)
 
 ## Manual conversion and learned words
 
@@ -129,17 +129,17 @@ Type as fast as you can, without pausing at the spaces. Nothing may be lost, dup
 
 | Learning by retyping: type a word typo misses on U.S. (e.g. `cutythbhetv␣`), erase it with ⌫ (word and space), switch with ⌃Space, type `сгенерируем␣` → Settings → Words shows `cutythbhetv → сгенерируем`, and the next `cutythbhetv␣` is converted | | | | | |
 
-- [ ] Quit and relaunch: a learned word is still corrected (`defaults read app.typo.Typo learnedWords`)
+- [ ] Quit and relaunch: a learned word is still corrected (`defaults read app.typo.Typo.dev learnedWords`)
 
 ## Statistics
 
-- [ ] After a few corrections, wait a minute (or quit Typo): `defaults read app.typo.Typo statistics` shows one entry for today, keyed like `2026-10-20`, holding only numbers under `layoutCorrection`, `spellingFix`, `accentRestoration`, `manualConversion`, `learnedFromRetyping`, `reverts`, `characters` and `secondsSaved`: no words, no times
+- [ ] After a few corrections, wait a minute (or quit Typo): `defaults read app.typo.Typo.dev statistics` shows one entry for today, keyed like `2026-10-20`, holding only numbers under `layoutCorrection`, `spellingFix`, `accentRestoration`, `manualConversion`, `learnedFromRetyping`, `reverts`, `characters` and `secondsSaved`: no words, no times
 - [ ] Corrections made just before quitting Typo are still counted after a relaunch
 - [ ] With Settings → Statistics open, `ghbdtn␣` in TextEdit raises "Words fixed" by one under Today, 7 days and 30 days at once, and "Time saved" by ≈ 4 s
 - [ ] ⌫ right after a correction lowers "Words fixed" by one again, and "Time saved" by a little more than the correction added
 - [ ] "Time saved" shows seconds below a minute (`≈ 45 s`), then minutes (`≈ 2 min`), then hours and minutes (`≈ 1 h 5 min`)
 - [ ] "Reset Statistics…" asks first: Cancel keeps the numbers, Reset empties every column (0 and `≈ 0 s`)
-- [ ] Turning "Keep statistics" off shows "Statistics are off." and `defaults read app.typo.Typo statistics` finds nothing; corrections made while off are not counted; turned back on, every column starts from zero
+- [ ] Turning "Keep statistics" off shows "Statistics are off." and `defaults read app.typo.Typo.dev statistics` finds nothing; corrections made while off are not counted; turned back on, every column starts from zero
 
 ## Password fields
 
@@ -152,7 +152,7 @@ Type as fast as you can, without pausing at the spaces. Nothing may be lost, dup
 
 ## Localization
 
-- [ ] With macOS set to Russian (or `defaults write app.typo.Typo AppleLanguages '("ru")'` and relaunch), the menu, the "Set Up Typo" window, every Settings tab and About Typo are fully in Russian; with English, fully in English
+- [ ] With macOS set to Russian (or `defaults write app.typo.Typo.dev AppleLanguages '("ru")'` and relaunch), the menu, the "Set Up Typo" window, every Settings tab and About Typo are fully in Russian; with English, fully in English
 - [ ] Settings → General shows "После 1 исправления подряд" / "После 2 исправлений подряд" as the stepper changes
 - [ ] Settings → Статистика: "Сегодня", "7 дней", "30 дней", "Исправлено слов", "Сэкономлено" with `≈ 4 с`, `≈ 2 мин`, `≈ 1 ч 5 мин`
 

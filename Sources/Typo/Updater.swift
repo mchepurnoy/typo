@@ -4,7 +4,8 @@ import Sparkle
 
 /// Updates from GitHub Releases through Sparkle (docs/adr/0005-updates-from-github-releases.md).
 /// Sparkle asks on the second launch whether to check automatically, then checks once a day; the
-/// feed and every update are EdDSA-signed, see SUPublicEDKey in Info.plist.
+/// feed and every update are EdDSA-signed, see SUPublicEDKey in Info.plist. A dev build never checks:
+/// an update would replace it with the release.
 @MainActor
 @Observable
 final class Updater: NSObject, SPUStandardUserDriverDelegate {
@@ -29,7 +30,8 @@ final class Updater: NSObject, SPUStandardUserDriverDelegate {
 
     override init() {
         super.init()
-        controller = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: self)
+        controller = SPUStandardUpdaterController(
+            startingUpdater: !Bundle.main.isDevBuild, updaterDelegate: nil, userDriverDelegate: self)
         canCheckObservation = controller.updater.observe(\.canCheckForUpdates, options: [.initial, .new]) { [weak self] updater, _ in
             let canCheck = updater.canCheckForUpdates
             MainActor.assumeIsolated { self?.canCheckForUpdates = canCheck }

@@ -9,7 +9,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 # codesign takes any unique part of the certificate name
-CODESIGN_ID="${CODESIGN_ID:-Developer ID Application}" UNIVERSAL=1 scripts/build-app.sh
+CODESIGN_ID="${CODESIGN_ID:-Developer ID Application}" UNIVERSAL=1 DISTRIBUTION=1 scripts/build-app.sh
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Support/Info.plist)
 STAGE=build/package/Typo
 ZIP=build/Typo-$VERSION-test.zip

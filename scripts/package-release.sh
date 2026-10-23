@@ -44,7 +44,7 @@ KEY_ARGS=()
 if [ -n "${SPARKLE_KEY_FILE:-}" ]; then KEY_ARGS=(--ed-key-file "$SPARKLE_KEY_FILE"); fi
 
 # codesign takes any unique part of the certificate name
-CODESIGN_ID="${CODESIGN_ID:-Developer ID Application}" UNIVERSAL=1 scripts/build-app.sh
+CODESIGN_ID="${CODESIGN_ID:-Developer ID Application}" UNIVERSAL=1 DISTRIBUTION=1 scripts/build-app.sh
 scripts/notarize-app.sh build/Typo.app
 # Without local extended attributes, which would otherwise ride along as ._ files
 ditto -c -k --norsrc --noextattr --noqtn --keepParent build/Typo.app "$OUT/$ZIP_NAME"
