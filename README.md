@@ -62,20 +62,19 @@ To check a release before tagging it, `scripts/package-release.sh` builds the sa
 Sparkle's tools come with the package: `swift package resolve`, then they are in `.build/artifacts/sparkle/Sparkle/bin/`.
 
 1. `generate_keys` creates the update signing key in the login keychain and prints the public key: put it in `SUPublicEDKey` in `Support/Info.plist`. `generate_keys -x sparkle.key` exports the private key. Keep a copy offline (a password manager): without it, installed copies can never be updated again.
-2. Export the **Developer ID Application** certificate with its private key from Keychain Access as a `.p12` with a password.
-3. Create the `release` environment (Settings → Environments) and put the secrets into it, never into repository secrets:
+2. Create the `release` environment (Settings → Environments) and put the secrets into it, never into repository secrets:
 
    ```sh
    gh secret set SPARKLE_PRIVATE_KEY --env release < sparkle.key && rm -P sparkle.key
    gh secret set NOTARY_TEAM_ID --env release --body TEAMID
-   scripts/setup-release-secrets.sh   # asks for the .p12 and the notarization login, sets the rest
+   scripts/setup-release-secrets.sh   # exports the Developer ID certificate, asks for the notarization login
    ```
 
    | Secret | Value |
    | --- | --- |
    | `SPARKLE_PRIVATE_KEY` | the contents of `sparkle.key` |
    | `NOTARY_TEAM_ID` | the team ID, in brackets in the certificate name |
-   | `DEVELOPER_ID_P12`, `DEVELOPER_ID_P12_PASSWORD` | the exported `.p12` (base64) and its password |
+   | `DEVELOPER_ID_P12`, `DEVELOPER_ID_P12_PASSWORD` | the Developer ID certificate with its key as a `.p12` (base64), and its random password |
    | `NOTARY_APPLE_ID`, `NOTARY_PASSWORD` | what `notarytool store-credentials` takes: Apple ID, app-specific password |
 
 ### Release security
