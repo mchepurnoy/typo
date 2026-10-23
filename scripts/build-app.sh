@@ -17,19 +17,29 @@ BIN_DIR=$(swift build -c release ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"} --show-bin-
 
 pkill -x Typo 2>/dev/null || true
 rm -rf "$APP"
-mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Frameworks"
 cp "$BIN_DIR/Typo" "$APP/Contents/MacOS/Typo"
+# Sparkle installs updates; ditto keeps the framework's symlinks. Its XPC services are only for
+# sandboxed apps, which typo is not.
+SPARKLE="$APP/Contents/Frameworks/Sparkle.framework"
+ditto "$BIN_DIR/Sparkle.framework" "$SPARKLE"
+rm -rf "$SPARKLE/Versions/B/XPCServices" "$SPARKLE/XPCServices"
+if ! otool -l "$APP/Contents/MacOS/Typo" | grep -q "@executable_path/../Frameworks"; then
+  install_name_tool -add_rpath @executable_path/../Frameworks "$APP/Contents/MacOS/Typo"
+fi
 cp LanguageModels/*.lm LanguageModels/*.accents Support/AppIcon.icns "$APP/Contents/Resources/"
 # The MIT licence of the ё word list must travel with it
 cp LanguageModels/LICENSE-eyo-kernel.txt "$APP/Contents/Resources/"
 # Interface strings: en.lproj and ru.lproj from the String Catalog
 xcrun xcstringstool compile Sources/Typo/Resources/Localizable.xcstrings --output-directory "$APP/Contents/Resources"
 cp Support/Info.plist "$APP/Contents/Info.plist"
+# Inside out, without --deep: Sparkle's helpers, the framework, then the app
+SIGNED=("$SPARKLE/Versions/B/Autoupdate" "$SPARKLE/Versions/B/Updater.app" "$SPARKLE" "$APP")
 if [ -n "${CODESIGN_ID:-}" ]; then
   # Hardened runtime and a secure timestamp: notarization requires both
-  codesign --force --options runtime --timestamp --sign "$CODESIGN_ID" "$APP"
+  for item in "${SIGNED[@]}"; do codesign --force --options runtime --timestamp --sign "$CODESIGN_ID" "$item"; done
 else
-  codesign --force --sign - "$APP"
+  for item in "${SIGNED[@]}"; do codesign --force --sign - "$item"; done
   # An ad-hoc signature changes every build, so a stale grant would look enabled but not work.
   tccutil reset Accessibility "$BUNDLE_ID" >/dev/null 2>&1 || true
   tccutil reset ListenEvent "$BUNDLE_ID" >/dev/null 2>&1 || true

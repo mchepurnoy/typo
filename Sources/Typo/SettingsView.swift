@@ -12,10 +12,11 @@ struct SettingsView: View {
     let launchAtLogin: LaunchAtLogin
     let status: Status
     let statistics: StatisticsStore
+    let updater: Updater
 
     var body: some View {
         TabView {
-            GeneralTab(settings: settings, pauseHotkey: pauseHotkey, launchAtLogin: launchAtLogin)
+            GeneralTab(settings: settings, pauseHotkey: pauseHotkey, launchAtLogin: launchAtLogin, updater: updater)
                 .tabItem { Label("General", systemImage: "gearshape") }
             WordsTab(settings: settings)
                 .tabItem { Label("Words", systemImage: "text.badge.checkmark") }
@@ -34,6 +35,7 @@ private struct GeneralTab: View {
     @Bindable var settings: SettingsStore
     @Bindable var pauseHotkey: PauseHotkey
     let launchAtLogin: LaunchAtLogin
+    @Bindable var updater: Updater
 
     var body: some View {
         Form {
@@ -66,6 +68,7 @@ private struct GeneralTab: View {
             Toggle("Fix typos in the right layout (teh → the)", isOn: $settings.fixesTypos)
             Toggle("Add ё, umlauts and accents where certain (еще → ещё, konnen → können)", isOn: $settings.restoresAccents)
             Toggle("Play a sound on each correction", isOn: $settings.playsSound)
+            Toggle("Check for updates automatically", isOn: $updater.automaticallyChecksForUpdates)
         }
         .formStyle(.grouped)
     }

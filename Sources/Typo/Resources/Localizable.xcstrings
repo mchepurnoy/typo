@@ -183,6 +183,26 @@
         }
       }
     },
+    "Check for Updates…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверить обновления…"
+          }
+        }
+      }
+    },
+    "Check for updates automatically": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверять обновления автоматически"
+          }
+        }
+      }
+    },
     "Clear": {
       "localizations": {
         "ru": {
@@ -329,6 +349,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Мониторинг ввода выключен: Typo может не видеть, что вы печатаете."
+          }
+        }
+      }
+    },
+    "Install Typo %@…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Установить Typo %@…"
           }
         }
       }

@@ -8,7 +8,7 @@ Setup: turn off System Settings → Keyboard → Input Sources → "Automaticall
 
 - [ ] `scripts/build-app.sh` succeeds from a clean checkout
 - [ ] `open build/Typo.app` shows a keyboard icon in the menu bar and no Dock icon
-- [ ] The menu has **Pause Typo**, **Settings…** (⌘,) and **Quit Typo** (⌘Q); Quit quits the app
+- [ ] The menu has **Pause Typo**, **Settings…** (⌘,), **About Typo**, **Check for Updates…** and **Quit Typo** (⌘Q); Quit quits the app
 - [ ] Console.app filtered on process `Typo` shows no "language model … not loaded" errors
 
 ## Permissions and onboarding
@@ -155,6 +155,18 @@ Type as fast as you can, without pausing at the spaces. Nothing may be lost, dup
 - [ ] With macOS set to Russian (or `defaults write app.typo.Typo AppleLanguages '("ru")'` and relaunch), the menu, the "Set Up Typo" window, every Settings tab and About Typo are fully in Russian; with English, fully in English
 - [ ] Settings → General shows "После 1 исправления подряд" / "После 2 исправлений подряд" as the stepper changes
 - [ ] Settings → Статистика: "Сегодня", "7 дней", "30 дней", "Исправлено слов", "Сэкономлено" with `≈ 4 с`, `≈ 2 мин`, `≈ 1 ч 5 мин`
+
+## Updates
+
+Before a release, with the previous release installed in /Applications and the new one published (or `scripts/package-release.sh` checked locally):
+
+- [ ] Fresh settings (`defaults delete app.typo.Typo`): the first launch does not ask about updates; the second launch asks once whether to check automatically, and the answer shows in Settings → General → "Check for updates automatically"
+- [ ] **Check for Updates…** with the newest version installed says it is up to date
+- [ ] With an older version installed, **Check for Updates…** shows the new version with its CHANGELOG notes; Install Update downloads, quits Typo, replaces it and relaunches it as the new version
+- [ ] After the update, corrections work at once: Accessibility and Input Monitoring stay granted, no setup window
+- [ ] Automatic checks on, an update published while Typo has been running a while: no window pops up while typing; the menu shows **Install Typo <version>…**, which opens the update window
+- [ ] In Russian, Sparkle's update window is in Russian too
+- [ ] A feed with one character changed (`appcast.xml` served locally via `defaults write app.typo.Typo SUFeedURL http://localhost:8000/appcast.xml`, remove it afterwards) is rejected with a signature error, nothing is installed
 
 ## Privacy
 

@@ -41,6 +41,55 @@ The build is signed with a Developer ID and notarized, so it opens on another Ma
 
 `CODESIGN_ID` and `NOTARY_PROFILE` override the certificate and the profile.
 
+## Publish a release
+
+Releases go to [GitHub Releases](https://github.com/mchepurnoy/typo/releases), and installed copies update themselves from there with [Sparkle](https://sparkle-project.org) ([ADR 0005](docs/adr/0005-updates-from-github-releases.md)). For each release:
+
+1. In `Support/Info.plist` raise `CFBundleShortVersionString` **and** `CFBundleVersion` (Sparkle compares `CFBundleVersion`, a whole number that only grows).
+2. Add a `## <version>` section to [`CHANGELOG.md`](CHANGELOG.md): it becomes the notes on the release page and in the update window.
+3. Commit to `main`, then tag and push:
+
+   ```sh
+   git tag v0.4.0 && git push origin main v0.4.0
+   ```
+
+4. The [Release workflow](.github/workflows/release.yml) tests the tagged commit, then waits for approval in the `release` environment (Actions → the run → Review deployments). After approval it builds, signs, notarizes and publishes `Typo-<version>.zip` and `appcast.xml`.
+
+To check a release before tagging it, `scripts/package-release.sh` builds the same files into `build/release/` on this Mac. It needs what `package-for-testing.sh` needs and the Sparkle private key in the keychain (or the file `SPARKLE_KEY_FILE`).
+
+### One-time setup
+
+Sparkle's tools come with the package: `swift package resolve`, then they are in `.build/artifacts/sparkle/Sparkle/bin/`.
+
+1. `generate_keys` creates the update signing key in the login keychain and prints the public key: put it in `SUPublicEDKey` in `Support/Info.plist`. `generate_keys -x sparkle.key` exports the private key. Keep a copy offline (a password manager): without it, installed copies can never be updated again.
+2. Export the **Developer ID Application** certificate with its private key from Keychain Access as a `.p12` with a password.
+3. Create the `release` environment (Settings → Environments) and put the secrets into it, never into repository secrets:
+
+   ```sh
+   gh secret set SPARKLE_PRIVATE_KEY --env release < sparkle.key && rm -P sparkle.key
+   gh secret set NOTARY_TEAM_ID --env release --body TEAMID
+   scripts/setup-release-secrets.sh   # asks for the .p12 and the notarization login, sets the rest
+   ```
+
+   | Secret | Value |
+   | --- | --- |
+   | `SPARKLE_PRIVATE_KEY` | the contents of `sparkle.key` |
+   | `NOTARY_TEAM_ID` | the team ID, in brackets in the certificate name |
+   | `DEVELOPER_ID_P12`, `DEVELOPER_ID_P12_PASSWORD` | the exported `.p12` (base64) and its password |
+   | `NOTARY_APPLE_ID`, `NOTARY_PASSWORD` | what `notarytool store-credentials` takes: Apple ID, app-specific password |
+
+### Release security
+
+Whoever can run the release job can ship code to every installed copy, so:
+
+- **Secrets live only in the `release` environment**, not in repository secrets. The environment has a required reviewer (the owner), admins cannot bypass it, and only `v*` tags may deploy to it.
+- **A tag ruleset on `refs/tags/v*`**: only the repository admin may create, move or delete version tags.
+- **A branch ruleset on `main`**: no force pushes and no deletion. The workflow refuses a tag whose commit is not on `main`, and a tag that does not match `CFBundleShortVersionString`.
+- **The workflow runs only on tag pushes**, never on pull requests, so forks never see the secrets. Tests run in a job without secrets; the signing job gets `contents: write`, everything else is read-only.
+- **Actions**: only GitHub's own actions are allowed (Settings → Actions → General), `actions/checkout` is pinned to a commit, Sparkle to an exact version (`Package.resolved`). The default `GITHUB_TOKEN` is read-only, and workflows from outside contributors need approval.
+- **Releases are immutable** once published (Settings → General → Releases), so a published zip or feed cannot be swapped.
+- **The app trusts only signed updates**: the zip and `appcast.xml` are EdDSA-signed (`SURequireSignedFeed`, `SUVerifyUpdateBeforeExtraction`), `package-release.sh` refuses a key that does not match `SUPublicEDKey`, and Sparkle also requires the new app to carry the same Developer ID.
+
 ## App icon
 
 `Support/AppIcon.svg` is the source; `scripts/build-icon.sh` renders `Support/AppIcon.icns` from it with the system SVG renderer. Re-run it after editing the SVG.
@@ -76,7 +125,7 @@ One case it cannot see: a password prompt in a terminal (`sudo`, `ssh`), which i
 
 ## Privacy
 
-typo sees every key you press. What you type is kept in memory only for the current word and is never written to disk, logs or the network ([ADR 0003](docs/adr/0003-never-store-typed-text.md)). Settings → Statistics keeps only per-day counts of the rewrites typo made, for 8 weeks; turning it off deletes them ([ADR 0004](docs/adr/0004-daily-correction-counts.md)).
+typo sees every key you press. What you type is kept in memory only for the current word and is never written to disk, logs or the network ([ADR 0003](docs/adr/0003-never-store-typed-text.md)). Settings → Statistics keeps only per-day counts of the rewrites typo made, for 8 weeks; turning it off deletes them ([ADR 0004](docs/adr/0004-daily-correction-counts.md)). The only network access is checking GitHub for updates and downloading them, if the user allows it; nothing about the user is sent ([ADR 0005](docs/adr/0005-updates-from-github-releases.md)).
 
 ## License
 

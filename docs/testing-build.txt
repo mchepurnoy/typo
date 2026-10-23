@@ -29,7 +29,11 @@ Apple Silicon, и Intel.
    Перезапускать программу не нужно: как только строки стали зелёными, всё работает.
 
 4) В строке меню появится значок клавиши с буквой «Я». В его меню: Пауза,
-   Настройки, О программе, Выход.
+   Настройки, О программе, Проверить обновления, Выход.
+
+   Новые версии Typo ставит сам: при втором запуске он спросит, проверять ли
+   обновления автоматически (раз в день; меняется в Настройках). Скачивать
+   архив вручную больше не нужно.
 
 5) Нужны две раскладки: английская (U.S. или ABC) и русская («Русская – ПК»
    или «Русская»). Добавить: Системные настройки → Клавиатура → Источники ввода.
@@ -93,7 +97,9 @@ Apple Silicon, и Intel.
 4. ПРИВАТНОСТЬ
 
 Typo видит нажатия клавиш, но держит в памяти только текущее слово: ничего не
-сохраняет, не пишет в журналы и никуда не отправляет, интернет ему не нужен.
+сохраняет, не пишет в журналы и никуда не отправляет. В интернет Typo ходит
+только проверить и скачать обновления на GitHub, если вы это разрешили; о вас
+при этом ничего не передаётся.
 На диске хранятся только настройки, исключения, выученные слова и статистика:
 количество исправлений по дням за последние 8 недель, без самих слов.
 Исходный код открыт (GPL-3.0).
@@ -117,4 +123,6 @@ Accessibility and Input Monitoring in the "Set Up Typo" window. Backspace right
 after a correction undoes it; double-tap Shift converts the last word by hand;
 press and release Control+Command to pause or resume. Settings → Statistics
 shows words fixed and an estimate of the time saved today, in 7 and 30 days.
-Nothing you type is stored or sent anywhere; statistics are daily counts only.
+Typo updates itself from GitHub Releases (it asks on the second launch whether
+to check automatically). Nothing you type is stored or sent anywhere;
+statistics are daily counts only.

@@ -14,14 +14,7 @@ VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Support
 STAGE=build/package/Typo
 ZIP=build/Typo-$VERSION-test.zip
 
-# Apple checks the app, then its ticket is stapled on so Gatekeeper lets it open without asking
-NOTARY_ZIP=build/Typo-notarize.zip
-rm -f "$NOTARY_ZIP"
-ditto -c -k --keepParent build/Typo.app "$NOTARY_ZIP"
-xcrun notarytool submit "$NOTARY_ZIP" --keychain-profile "${NOTARY_PROFILE:-typo-notary}" --wait
-rm "$NOTARY_ZIP"
-xcrun stapler staple build/Typo.app
-spctl --assess --type execute --verbose build/Typo.app
+scripts/notarize-app.sh build/Typo.app
 
 rm -rf build/package "$ZIP"
 mkdir -p "$STAGE"

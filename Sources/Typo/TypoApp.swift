@@ -16,7 +16,7 @@ struct TypoApp: App {
         Settings {
             SettingsView(
                 settings: delegate.settings, pauseHotkey: delegate.pauseHotkey, launchAtLogin: delegate.launchAtLogin,
-                status: delegate.status, statistics: delegate.statistics)
+                status: delegate.status, statistics: delegate.statistics, updater: delegate.updater)
         }
     }
 }
@@ -42,6 +42,10 @@ private struct MenuContent: View {
 
     var body: some View {
         let status = delegate.status
+        if let version = delegate.updater.availableVersion {
+            Button("Install Typo \(version)…") { delegate.updater.checkForUpdates() }
+            Divider()
+        }
         if !status.missingLanguages.isEmpty {
             let names = status.missingLanguages.compactMap(Language.init(rawValue:)).map(\.displayName)
                 .formatted(.list(type: .and))
@@ -63,6 +67,8 @@ private struct MenuContent: View {
         }
         .keyboardShortcut(",")
         Button("About Typo") { delegate.showAbout() }
+        Button("Check for Updates…") { delegate.updater.checkForUpdates() }
+            .disabled(!delegate.updater.canCheckForUpdates)
         Divider()
         Button("Quit Typo") { NSApp.terminate(nil) }
             .keyboardShortcut("q")
@@ -101,6 +107,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let pauseHotkey: PauseHotkey
     let permissions = Permissions()
     let launchAtLogin = LaunchAtLogin()
+    let updater = Updater()
     private lazy var onboarding = OnboardingWindow(permissions: permissions)
     /// Loaded once, up front: not inside the event tap.
     private let correctionSound = NSSound(named: "Tink")

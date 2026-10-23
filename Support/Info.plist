@@ -29,5 +29,13 @@
 	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>Licensed under GPL-3.0-only.</string>
+	<key>SUFeedURL</key>
+	<string>https://github.com/mchepurnoy/typo/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>7xOELlZWk7aqy0VPIRCbqAT27D+Ix7r7ihQyK1xKklo=</string>
+	<key>SURequireSignedFeed</key>
+	<true/>
+	<key>SUVerifyUpdateBeforeExtraction</key>
+	<true/>
 </dict>
 </plist>

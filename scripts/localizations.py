@@ -35,6 +35,8 @@ TRANSLATIONS = {
     "Pause Typo": "Приостановить Typo",
     "Settings…": "Настройки…",
     "About Typo": "О программе Typo",
+    "Check for Updates…": "Проверить обновления…",
+    "Install Typo %@…": "Установить Typo %@…",
     "Quit Typo": "Завершить Typo",
     "Set Up Permissions…": "Настроить разрешения…",
     "Language data missing: %@. Reinstall Typo.": "Нет языковых данных: %@. Переустановите Typo.",
@@ -100,6 +102,7 @@ TRANSLATIONS = {
     "Add ё, umlauts and accents where certain (еще → ещё, konnen → können)":
         "Расставлять ё, умлауты и акценты, где это однозначно (еще → ещё, konnen → können)",
     "Play a sound on each correction": "Звук при каждом исправлении",
+    "Check for updates automatically": "Проверять обновления автоматически",
     # Settings: Words
     "Search": "Поиск",
     "Show all (%lld)": "Показать все (%lld)",
