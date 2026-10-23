@@ -1,133 +1,88 @@
-# typo
+<p align="center">
+  <img src="Support/AppIcon.svg" width="96" height="96" alt="">
+</p>
 
-A native macOS menu-bar app that fixes words typed in the wrong keyboard layout: type `ghbdtn` on the U.S. layout, press Space, get `привет`.
+<h1 align="center">typo</h1>
 
-Early development.
+<p align="center">
+  Fixes words typed in the wrong keyboard layout on macOS.<br>
+  Type <code>ghbdtn</code>, press Space, get <code>привет</code>.
+</p>
 
-## Requirements
+<p align="center">
+  <a href="https://github.com/mchepurnoy/typo/releases/latest"><b>Download for macOS</b></a>
+  · macOS 14+ · Apple silicon and Intel · free and open source
+</p>
 
-- macOS 14 or later
-- Xcode 16 or later (Swift 6 toolchain); the command-line tools are enough to build
+<p align="center">
+  <img src="docs/demo.gif" width="760" alt="typo in a terminal: ghbdtn becomes привет; in a Russian sentence, gthtpfgecnb becomes перезапусти and тпштч becomes nginx; згырув becomes pushed">
+</p>
 
-## Build and run
+typo sits in the menu bar and checks every word when you press Space. If the word only makes sense in your other layout, typo retypes it there, and after two such words in a row it switches the layout for you. Like Punto Switcher, but open source, offline and native.
 
-```sh
-scripts/build-app.sh      # builds build/Typo.app
-open build/Typo.app
-```
+- **Accurate.** On news text it has never seen, typo fixes **over 99%** of words typed in the wrong layout and touches **fewer than 1 in 10,000** words typed right. Russian, English, German and Spanish.
+- **Leaves tech words alone.** `nginx` or `nodejs` in the middle of a Russian sentence comes back in Latin without flipping your layout. Links, paths, commands, `camelCase` and words with digits are never changed.
+- **Private.** Only the current word is kept, in memory. Nothing you type is written to disk or sent anywhere, and password fields are skipped entirely.
+- **Native and light.** A small Swift app: no account, no Electron, no network except optional update checks. It decides in under a millisecond per word.
 
-typo lives in the menu bar (keyboard icon) and has no Dock icon. On first launch macOS asks for **Accessibility** access: allow it in System Settings → Privacy & Security → Accessibility. typo starts working as soon as access is granted; no relaunch needed.
+---
 
-This build is **Typo Dev** (`app.typo.Typo.dev`): its permissions, settings and login item are separate from an installed Typo, it never checks for updates and is not opened at login. Quit an installed Typo while testing it, or both correct every word.
+## Install
 
-The default build is ad-hoc signed, whose signature changes on every build, so the script resets Typo Dev's Accessibility grant each time and you grant it again. To keep the grant across rebuilds, sign with a stable identity (a free Personal Team certificate works):
+1. Download `Typo-<version>.zip` from the [latest release](https://github.com/mchepurnoy/typo/releases/latest), unzip it and drag **Typo.app** to Applications. It is signed and notarized by Apple.
+2. Open it. The **Set Up Typo** window asks for two permissions, and its buttons open the right pages in System Settings:
+   - **Input Monitoring**, to see what you type;
+   - **Accessibility**, to replace the word.
 
-```sh
-CODESIGN_ID="Apple Development: you@example.com (TEAMID)" scripts/build-app.sh
-```
+   typo starts working as soon as both are granted, without a relaunch.
+3. Have both layouts enabled in **System Settings → Keyboard → Input Sources**, e.g. U.S. or ABC and Russian – PC. Any layout of a supported language takes part.
 
-## Send a test build to someone
+> [!TIP]
+> In the same Input Sources settings, turn off **Automatically switch to a document's input source**. Otherwise macOS undoes the layout switches typo makes.
 
-```sh
-scripts/package-for-testing.sh   # build/Typo-<version>-test.zip: Apple silicon + Intel, with README.txt
-```
+typo updates itself from GitHub Releases. On the second launch it asks whether to check once a day.
 
-The build is signed with a Developer ID and notarized, so it opens on another Mac without Gatekeeper warnings, and a newer build keeps the Accessibility and Input Monitoring grants. `README.txt` in the zip explains installing, in Russian and English. The script needs, once per Mac:
+## Use
 
-- the **Developer ID Application** certificate with its private key in the keychain: `security find-identity -v -p codesigning` lists it;
-- notarization credentials saved as the keychain profile `typo-notary`, from an app-specific password of an Apple ID in the team:
+Just type. A word is fixed when you press Space, Return or Tab.
 
-  ```sh
-  xcrun notarytool store-credentials typo-notary --apple-id you@example.com --team-id TEAMID --password xxxx-xxxx-xxxx-xxxx
-  ```
+| To | Do |
+| --- | --- |
+| Undo a fix | Press **Backspace** right after it. The word comes back and typo never fixes it again. |
+| Convert a word typo missed | **Double-tap Shift.** The last word switches layout, and typo learns it. |
+| Pause typo, e.g. for a password | Press and release **⌃⌘** together. Again to resume. |
+| Never touch some app | **Settings → Excluded Apps.** |
 
-`CODESIGN_ID` and `NOTARY_PROFILE` override the certificate and the profile.
-
-## Publish a release
-
-Releases go to [GitHub Releases](https://github.com/mchepurnoy/typo/releases), and installed copies update themselves from there with [Sparkle](https://sparkle-project.org) ([ADR 0005](docs/adr/0005-updates-from-github-releases.md)). For each release:
-
-1. In `Support/Info.plist` raise `CFBundleShortVersionString` **and** `CFBundleVersion` (Sparkle compares `CFBundleVersion`, a whole number that only grows).
-2. Add a `## <version>` section to [`CHANGELOG.md`](CHANGELOG.md): it becomes the notes on the release page and in the update window.
-3. Commit to `main`, then tag and push:
-
-   ```sh
-   git tag v0.4.0 && git push origin main v0.4.0
-   ```
-
-4. The [Release workflow](.github/workflows/release.yml) tests the tagged commit, then waits for approval in the `release` environment (Actions → the run → Review deployments). After approval it builds, signs, notarizes and publishes `Typo-<version>.zip` and `appcast.xml`.
-
-To check a release before tagging it, `scripts/package-release.sh` builds the same files into `build/release/` on this Mac. It needs what `package-for-testing.sh` needs and the Sparkle private key in the keychain (or the file `SPARKLE_KEY_FILE`).
-
-### One-time setup
-
-Sparkle's tools come with the package: `swift package resolve`, then they are in `.build/artifacts/sparkle/Sparkle/bin/`.
-
-1. `generate_keys` creates the update signing key in the login keychain and prints the public key: put it in `SUPublicEDKey` in `Support/Info.plist`. `generate_keys -x sparkle.key` exports the private key. Keep a copy offline (a password manager): without it, installed copies can never be updated again.
-2. Create the `release` environment (Settings → Environments) and put the secrets into it, never into repository secrets:
-
-   ```sh
-   gh secret set SPARKLE_PRIVATE_KEY --env release < sparkle.key && rm -P sparkle.key
-   gh secret set NOTARY_TEAM_ID --env release --body TEAMID
-   scripts/setup-release-secrets.sh   # exports the Developer ID certificate, asks for the notarization login
-   ```
-
-   | Secret | Value |
-   | --- | --- |
-   | `SPARKLE_PRIVATE_KEY` | the contents of `sparkle.key` |
-   | `NOTARY_TEAM_ID` | the team ID, in brackets in the certificate name |
-   | `DEVELOPER_ID_P12`, `DEVELOPER_ID_P12_PASSWORD` | the Developer ID certificate with its key as a `.p12` (base64), and its random password |
-   | `NOTARY_APPLE_ID`, `NOTARY_PASSWORD` | what `notarytool store-credentials` takes: Apple ID, app-specific password |
-
-### Release security
-
-Whoever can run the release job can ship code to every installed copy, so:
-
-- **Secrets live only in the `release` environment**, not in repository secrets. The environment has a required reviewer (the owner), admins cannot bypass it, and only `v*` tags may deploy to it.
-- **A tag ruleset on `refs/tags/v*`**: only the repository admin may create, move or delete version tags.
-- **A branch ruleset on `main`**: no force pushes and no deletion. The workflow refuses a tag whose commit is not on `main`, and a tag that does not match `CFBundleShortVersionString`.
-- **The workflow runs only on tag pushes**, never on pull requests, so forks never see the secrets. Tests run in a job without secrets; the signing job gets `contents: write`, everything else is read-only.
-- **Actions**: only GitHub's own actions are allowed (Settings → Actions → General), `actions/checkout` is pinned to a commit, Sparkle to an exact version (`Package.resolved`). The default `GITHUB_TOKEN` is read-only, and workflows from outside contributors need approval.
-- **Releases are immutable** once published (Settings → General → Releases), so a published zip or feed cannot be swapped.
-- **The app trusts only signed updates**: the zip and `appcast.xml` are EdDSA-signed (`SURequireSignedFeed`, `SUVerifyUpdateBeforeExtraction`), `package-release.sh` refuses a key that does not match `SUPublicEDKey`, and Sparkle also requires the new app to carry the same Developer ID.
-
-## App icon
-
-`Support/AppIcon.svg` is the source; `scripts/build-icon.sh` renders `Support/AppIcon.icns` from it with the system SVG renderer. Re-run it after editing the SVG.
-
-## Interface languages
-
-The interface is in English and Russian and follows the system language. Translations live in `scripts/localizations.py`, which writes the String Catalog `Sources/Typo/Resources/Localizable.xcstrings`; `build-app.sh` compiles it into the app. After adding or changing an interface string, add its translation there and run the script. `LocalizationTests` fails on any interface string without a Russian translation, and on unused keys.
-
-## Test
-
-```sh
-swift test                 # all tests
-swift test -c release      # also runs the timing tests, which are skipped in debug builds
-```
-
-The `Engine` module (pure Swift, no AppKit/Carbon) holds all correction logic and is covered by scenario tests. The macOS adapter and app shell (`Sources/Typo`) are checked by hand with [`docs/qa-checklist.md`](docs/qa-checklist.md).
-
-## Language models
-
-Detection uses one language model per supported language (English, Russian, German, Spanish) in `LanguageModels/`, built from the Leipzig Corpora Collection (CC BY). To rebuild them (downloads ≈1 GB once):
-
-```sh
-scripts/build-language-models.py
-```
-
-Next to them, `<code>.accents` tables list words whose ё, umlauts or accents typo restores when they are left out ("еще" → "ещё", "konnen" → "können"); rebuild with `scripts/build-accent-tables.py`. Sources, licences, attribution and the file formats are in [`LanguageModels/SOURCES.md`](LanguageModels/SOURCES.md). The accuracy test runs held-out news text through the Engine (`Tests/EngineTests/Accuracy/`, regenerate with `scripts/build-accuracy-corpus.py`).
-
-## Password fields
-
-Typo never touches what you type into a password field. Most of them turn on macOS secure input, which hides every key from typo. For those that do not, typo asks Accessibility whether the focused field is a password field (right after Tab, Return, a click or an app switch, and four times a second) and stays silent there: no corrections, no conversions, no learning, nothing remembered.
-
-One case it cannot see: a password prompt in a terminal (`sudo`, `ssh`), which is plain text to macOS. Spelling fixes are already off in terminals, but a password typed in the wrong layout could be converted on Return. Turn on **Terminal → Secure Keyboard Entry** (iTerm2: **iTerm2 → Secure Keyboard Entry**), or add the terminal to Settings → Excluded Apps.
+typo also fixes typos in the right layout (`превет` → `привет`, `teh` → `the`) and restores a certain ё, umlaut or accent (`еще` → `ещё`, `konnen` → `können`). **Settings → Statistics** shows how many words it fixed and roughly how much time that saved. Every one of these can be turned off in Settings.
 
 ## Privacy
 
-typo sees every key you press. What you type is kept in memory only for the current word and is never written to disk, logs or the network ([ADR 0003](docs/adr/0003-never-store-typed-text.md)). Settings → Statistics keeps only per-day counts of the rewrites typo made, for 8 weeks; turning it off deletes them ([ADR 0004](docs/adr/0004-daily-correction-counts.md)). The only network access is checking GitHub for updates and downloading them, if the user allows it; nothing about the user is sent ([ADR 0005](docs/adr/0005-updates-from-github-releases.md)).
+typo sees every key you press, so here is exactly what it keeps:
+
+- **What you type:** only the current word, in memory, never on disk, in logs or on the network ([ADR 0003](docs/adr/0003-never-store-typed-text.md)).
+- **On disk:** your settings, exceptions, learned words and per-day counts of fixes for 8 weeks, without the words ([ADR 0004](docs/adr/0004-daily-correction-counts.md)).
+- **Network:** checking GitHub for updates and downloading them, if you allow it. Nothing about you is sent ([ADR 0005](docs/adr/0005-updates-from-github-releases.md)).
+
+**Password fields** are left alone: no fixes, no learning, nothing remembered. Most of them turn on macOS secure input, which hides every key from typo; for the rest, typo asks Accessibility whether the focused field is a password field. The one case it cannot see is a password prompt in a terminal (`sudo`, `ssh`), which is plain text to macOS. If you type passwords there, turn on **Terminal → Secure Keyboard Entry** (iTerm2: **iTerm2 → Secure Keyboard Entry**) or add the terminal to **Settings → Excluded Apps**.
+
+## Uninstall
+
+Quit typo from its menu and delete Typo.app. To remove its settings and permissions too:
+
+```sh
+defaults delete app.typo.Typo
+tccutil reset Accessibility app.typo.Typo
+tccutil reset ListenEvent app.typo.Typo
+```
+
+## Build from source
+
+```sh
+scripts/build-app.sh && open build/Typo.app
+```
+
+Needs Xcode 16 or its command-line tools. Testing, releases and the language models are covered in [docs/development.md](docs/development.md).
 
 ## License
 
-typo is free software, licensed under the GNU General Public License version 3 only (SPDX: `GPL-3.0-only`). See [`LICENSE`](LICENSE) and [ADR 0002](docs/adr/0002-gplv3-license.md).
+typo is free software under the [GNU General Public License v3.0 only](LICENSE) ([ADR 0002](docs/adr/0002-gplv3-license.md)). Its language models are built from the [Leipzig Corpora Collection](https://wortschatz.uni-leipzig.de/en/download) (CC BY); see [LanguageModels/SOURCES.md](LanguageModels/SOURCES.md).
