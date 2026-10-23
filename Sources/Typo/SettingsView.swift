@@ -291,6 +291,8 @@ private struct WordRow: View {
                 .buttonStyle(.borderless)
                 .help("Remove")
         }
+        // An overlay scroller widens over the row's trailing edge on hover; keep the button clear of it
+        .padding(.trailing, NSScroller.scrollerWidth(for: .regular, scrollerStyle: .legacy))
     }
 }
 
