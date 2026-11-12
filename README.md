@@ -78,7 +78,7 @@ tccutil reset ListenEvent app.typo.Typo
 ## Build from source
 
 ```sh
-scripts/build-app.sh && open build/Typo.app
+scripts/build-app.sh && open "build/Typo Dev.app"
 ```
 
 Needs Xcode 16 or its command-line tools. Testing, releases and the language models are covered in [docs/development.md](docs/development.md).

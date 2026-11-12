@@ -1,7 +1,8 @@
 #!/bin/bash
-# Builds build/Typo.app from the Swift package.
-# A build for this Mac is "Typo Dev" (app.typo.Typo.dev): its permissions, settings and login item
-# are its own, so building never touches an installed release, and it does not check for updates.
+# Builds the app from the Swift package.
+# A build for this Mac is build/Typo Dev.app (app.typo.Typo.dev): its name, permissions, settings and
+# login item are its own, so it lives next to an installed Typo, and it does not check for updates.
+# DISTRIBUTION=1 builds build/Typo.app.
 # Usage: scripts/build-app.sh                                  ad-hoc signed, this Mac's architecture
 #        CODESIGN_ID="Apple Development: …" scripts/build-app.sh   stable identity, Accessibility grant survives rebuilds
 #                                                               (signed with hardened runtime, ready to notarize)
@@ -12,7 +13,12 @@ cd "$(dirname "$0")/.."
 
 APP=build/Typo.app
 BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" Support/Info.plist)
-if [ -z "${DISTRIBUTION:-}" ]; then BUNDLE_ID=$BUNDLE_ID.dev; fi
+if [ -z "${DISTRIBUTION:-}" ]; then
+  BUNDLE_ID=$BUNDLE_ID.dev
+  # Its own file name too: that is what System Settings → Privacy & Security lists
+  APP="build/Typo Dev.app"
+  rm -rf build/Typo.app
+fi
 if [ -n "${DISTRIBUTION:-}" ] && [ -z "${CODESIGN_ID:-}" ]; then
   # An ad-hoc Typo would also reset the installed Typo's permissions
   echo "DISTRIBUTION=1 needs CODESIGN_ID" >&2
@@ -44,7 +50,8 @@ cp LanguageModels/LICENSE-eyo-kernel.txt "$APP/Contents/Resources/"
 xcrun xcstringstool compile Sources/Typo/Resources/Localizable.xcstrings --output-directory "$APP/Contents/Resources"
 cp Support/Info.plist "$APP/Contents/Info.plist"
 if [ -z "${DISTRIBUTION:-}" ]; then
-  /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $BUNDLE_ID" -c "Set :CFBundleName Typo Dev" "$APP/Contents/Info.plist"
+  /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $BUNDLE_ID" -c "Set :CFBundleName Typo Dev" \
+    -c "Add :CFBundleDisplayName string Typo Dev" "$APP/Contents/Info.plist"
 fi
 # Inside out, without --deep: Sparkle's helpers, the framework, then the app
 SIGNED=("$SPARKLE/Versions/B/Autoupdate" "$SPARKLE/Versions/B/Updater.app" "$SPARKLE" "$APP")
@@ -58,4 +65,4 @@ else
   tccutil reset ListenEvent "$BUNDLE_ID" >/dev/null 2>&1 || true
   echo "Ad-hoc signed: Accessibility and Input Monitoring were reset for $BUNDLE_ID; grant them again on first launch."
 fi
-echo "Built $APP — run: open $APP"
+echo "Built $APP — run: open \"$APP\""

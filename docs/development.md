@@ -10,8 +10,8 @@ Building, testing and releasing typo. What the app does and how to install it is
 ## Build and run
 
 ```sh
-scripts/build-app.sh      # builds build/Typo.app
-open build/Typo.app
+scripts/build-app.sh      # builds build/Typo Dev.app
+open "build/Typo Dev.app"
 ```
 
 typo lives in the menu bar (keyboard icon) and has no Dock icon. On first launch macOS asks for **Accessibility** access: allow it in System Settings → Privacy & Security → Accessibility. typo starts working as soon as access is granted; no relaunch needed.

@@ -7,7 +7,7 @@ Setup: turn off System Settings → Keyboard → Input Sources → "Automaticall
 ## App shell
 
 - [ ] `scripts/build-app.sh` succeeds from a clean checkout
-- [ ] `open build/Typo.app` shows a keyboard icon in the menu bar and no Dock icon
+- [ ] `open "build/Typo Dev.app"` shows a keyboard icon in the menu bar and no Dock icon
 - [ ] The menu has **Pause Typo**, **Settings…** (⌘,), **About Typo**, **Check for Updates…** (disabled in Typo Dev) and **Quit Typo** (⌘Q); Quit quits the app
 - [ ] Console.app filtered on process `Typo` shows no "language model … not loaded" errors
 
