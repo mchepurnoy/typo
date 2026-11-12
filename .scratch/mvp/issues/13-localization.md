@@ -4,7 +4,7 @@
 
 **Blocked by:** 12
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] No hard-coded user-facing strings remain
 - [ ] Manual: switching macOS language to Russian shows a fully Russian UI

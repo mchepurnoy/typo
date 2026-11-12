@@ -4,7 +4,7 @@
 
 **Blocked by:** 03
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] Engine tests run without the spell checker (bundled lexicon only)
 - [x] App wires the real spell checker; first-call cost is paid at launch, not on the first word

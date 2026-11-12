@@ -4,7 +4,7 @@
 
 **Blocked by:** 03
 
-**Status:** ready-for-human
+**Status:** done
 
 - [ ] Manual (QA checklist): after a few corrections the Today column grows at once; a revert lowers it; Reset asks first and empties all columns; turning statistics off and on starts from zero
 - [x] The tester guide (`docs/testing-build.txt`) mentions the tab

@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] `swift test` runs Engine scenario tests: `ghbdtn`+Space on U.S. yields swallow + erase(6) + type("привет") + replayBoundary; a known English word yields pass
 - [x] Engine never imports AppKit/Carbon; layouts come through a protocol with fixture tables for U.S. and Russian – PC in tests

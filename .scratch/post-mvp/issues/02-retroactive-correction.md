@@ -4,7 +4,7 @@
 
 **Blocked by:** None
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] Scenario tests: `yt ghbdtn` → `не привет`; `plan ghbdtn` keeps `plan`; a reset, Backspace or Return between the words prevents it; exceptions are honoured; revert restores both words
 - [x] Accuracy test on running wrong-layout text: short-word recall improves; no new false corrections

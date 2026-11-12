@@ -4,7 +4,7 @@
 
 **Blocked by:** None
 
-**Status:** ready-for-human
+**Status:** done
 
 - [x] Shortcut recorded in the settings (Esc cancels, Delete clears), persisted, applied without a restart
 - [x] Modifiers alone (⌃⌘) detected in the event tap by `ModifierTapDetector` (unit-tested); a key combination registered with Carbon `RegisterEventHotKey`

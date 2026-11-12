@@ -4,7 +4,7 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] Engine scenario tests for every reset reason and every skip rule
 - [x] Capitalisation scenario tests pass

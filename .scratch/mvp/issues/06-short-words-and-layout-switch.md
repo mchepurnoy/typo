@@ -4,7 +4,7 @@
 
 **Blocked by:** 03
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] Scenario tests: `plan b` untouched; `ghbdtn d` → `привет в`; `ghbdtn API` no switch; `ghbdtn rfr` switches to Russian
 - [ ] Manual: after two corrections the menu-bar layout indicator changes

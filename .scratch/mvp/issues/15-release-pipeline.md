@@ -4,7 +4,7 @@
 
 **Blocked by:** 09, 10, 14
 
-**Status:** ready-for-human
+**Status:** done
 
 - [ ] Release script builds, signs, notarizes and staples the DMG
 - [ ] DMG installs on a clean Mac without Gatekeeper warnings

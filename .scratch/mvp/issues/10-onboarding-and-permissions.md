@@ -4,7 +4,7 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Fresh install (permissions reset) walks through onboarding to a working correction without relaunching
 - [ ] Revoking Accessibility while running is detected and surfaced in the menu

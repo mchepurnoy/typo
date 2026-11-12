@@ -4,7 +4,7 @@
 
 **Blocked by:** 01, 02, 03
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] Reproducible training script; weights committed with a note on data and results
 - [x] Accuracy comparison (rules vs model) recorded; decision documented

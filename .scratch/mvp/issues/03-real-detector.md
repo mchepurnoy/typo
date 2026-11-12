@@ -4,7 +4,7 @@
 
 **Blocked by:** 01, 02
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] Accuracy test over a corpus of (layout, keys, expected) cases with thresholds: high recall on 3+ letter wrong-layout words, near-zero false positives on normal EN/RU/DE/ES text and technical terms
 - [x] Corpus includes `тпштч`→`nginx`, `сщву`→`code`, `ghbdtnn`, and Russian words containing `б ю ж э х ъ ё`

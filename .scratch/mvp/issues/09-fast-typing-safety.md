@@ -4,7 +4,7 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Manual: typing fast through several corrections in TextEdit, Safari, Chrome, Terminal and VS Code loses, duplicates or reorders no characters
 - [ ] Manual: a deliberately slow callback triggers the back-off path without freezing the keyboard

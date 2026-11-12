@@ -4,7 +4,7 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] Scenario tests: revert yields the inverse actions + recordException; next time the same keys pass untouched; Return boundary offers no revert
 - [ ] Exceptions survive an app restart

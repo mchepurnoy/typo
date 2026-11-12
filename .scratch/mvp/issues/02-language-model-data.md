@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] One command downloads the chosen corpora and regenerates all four data files
 - [x] Each data file is small enough to bundle (target: a few MB total) and loads into memory in well under 100 ms

@@ -4,7 +4,7 @@
 
 **Blocked by:** None
 
-**Status:** ready-for-human
+**Status:** done
 
 - [x] Newest first; "Show all (N)" reveals the rest in a lazy list
 - [x] Search finds a word by what was typed and by its conversion, case-insensitively

@@ -1,6 +1,6 @@
 # Spec: a Words screen that scales, and statistics
 
-Status: ready-for-agent
+Status: done
 
 Two independent parts, decided with the maintainer on 2026-10-20.
 

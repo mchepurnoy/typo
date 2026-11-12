@@ -4,7 +4,7 @@
 
 **Blocked by:** None
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] Scenario tests: `teh` → `the`, `превет` → `привет`, known words and names untouched, no fix without a spell-checker "misspelled" answer, toggle off → untouched, revert records an exception
 - [x] Accuracy test: one-edit typos injected into held-out text are fixed to the right word in most cases and never to a wrong one more than rarely; correct text is never changed

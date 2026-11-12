@@ -4,7 +4,7 @@
 
 **Blocked by:** None
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] Data: Russian from eyo-kernel's safe list (MIT), German and Spanish from the Leipzig 2024 corpora, rebuilt by one script
 - [x] Scenario tests: restorations, ambiguous pairs untouched, case rules, other languages' words, toggle, revert, after a layout conversion and a manual one

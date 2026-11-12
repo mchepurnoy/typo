@@ -4,7 +4,7 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-human
+**Status:** done
 
 - [x] Tests: savings per kind follow the spec's table; a revert takes back its rewrite's saving plus 2 s and no longer counts the word; totals for today, 7 and 30 days; a bucket older than 56 days is dropped; turning statistics off or resetting deletes everything; nothing is counted while off
 - [x] Stored data contains no words, no per-word lengths and no times of day (ADR 0004)

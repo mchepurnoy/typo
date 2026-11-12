@@ -13,3 +13,7 @@ The skills speak in terms of five canonical triage roles. This file maps those r
 When a skill mentions a role (e.g. "apply the AFK-ready triage label"), use the corresponding label string from this table.
 
 Edit the right-hand column to match whatever vocabulary you actually use.
+
+## Finished work
+
+`done` is not a triage role: it marks a ticket or spec whose work is merged. A `done` ticket may still have unticked "Manual:" checks; those are run from `docs/qa-checklist.md` before a release.

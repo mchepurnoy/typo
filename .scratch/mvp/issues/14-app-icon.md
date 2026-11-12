@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] SVG source committed; asset catalog generated from it by a script
 - [ ] Icon looks right in Finder, Dock-less About panel, and both menu-bar appearances

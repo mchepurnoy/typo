@@ -1,6 +1,6 @@
 # Spec: after the MVP — typos, retroactive correction, learning, a small model
 
-Status: ready-for-agent
+Status: done
 
 The four features the MVP spec left out of scope, done before localization (ticket mvp/13) at the user's request (2026-10-05).
 

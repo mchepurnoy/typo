@@ -4,7 +4,7 @@
 
 **Blocked by:** 06, 08, 10, 11
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Every setting takes effect immediately without restart
 - [ ] Hotkey can be changed and the new one works

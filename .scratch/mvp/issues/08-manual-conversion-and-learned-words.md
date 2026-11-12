@@ -4,7 +4,7 @@
 
 **Blocked by:** 07
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] Scenario tests for convert, toggle-as-revert, learned-word auto-correction, learned→exception on revert
 - [x] Double-Shift detection does not fire on normal Shift use while typing capitals

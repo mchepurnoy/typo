@@ -4,7 +4,7 @@
 
 **Blocked by:** None
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] Scenario tests: `cegth␣` ⌫×6, switch to Russian, `супер␣` → learns `cegth`; abandoning `ghbd` with ⌫ then typing `привет` on Russian → learns `ghbdtn`; different keys, same layout, or a reset in between → learns nothing
 - [x] Learned this way shows in Settings → Words like a manual conversion

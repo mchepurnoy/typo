@@ -4,7 +4,7 @@
 
 **Blocked by:** None
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] Scenario tests: `ghbdtn␣` reports a layout correction of 6 characters; `teh␣` a spelling fix; `еще␣` an accent restoration; double Shift a manual conversion; Backspace right after a correction reports a revert of that correction; double Shift right after a manual conversion reports a revert of the conversion
 - [x] Words left alone, skipped words, paused or excluded apps report nothing

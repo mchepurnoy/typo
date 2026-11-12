@@ -4,7 +4,7 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] Scenario tests: paused → everything passes; excluded app active → everything passes
 - [ ] Manual: icon animation visible on correction; sound only when enabled
