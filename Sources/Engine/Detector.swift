@@ -70,9 +70,15 @@ struct Detector {
     }
 
     /// The word with a certain ё, umlaut or accent restored ("еще" → "ещё", "konnen" → "können"),
-    /// in a language of the enabled layouts of its script or an extra language. Left alone if
-    /// another of those languages knows the word as typed ("fur" with English enabled).
-    func accentRestoration(for word: [Key], layouts: ActiveLayouts, exceptions: Set<String>) -> Correction? {
+    /// in a language of the enabled layouts of its script or an extra language. If another of
+    /// those languages knows the word as typed ("fur", "nino" with English enabled), only when the
+    /// words before it say which language is being written (`allowedByContext`).
+    ///
+    /// - Parameter context: for each of the last few finished words, newest last, the languages
+    ///   that knew it (`languagesKnowing`).
+    func accentRestoration(
+        for word: [Key], layouts: ActiveLayouts, exceptions: Set<String>, context: [Set<Language>] = []
+    ) -> Correction? {
         guard let readings = readings(of: word, layouts: layouts, recent: [:]),
               !Self.isSkipped(readings.original),
               !exceptions.contains(readings.typed.lowercased()),
@@ -81,8 +87,11 @@ struct Detector {
         let typed = readings.typed
         for model in readings.sourceModels {
             guard let table = accentTables[model.language], let restored = table.restoration(of: typed) else { continue }
-            let othersKnow = readings.sourceModels.contains { $0.language != model.language && $0.frequency(of: typed) != nil }
-            guard !othersKnow, let range = readings.original.firstRange(of: typed) else { continue }
+            let blocking = readings.sourceModels.filter { $0.language != model.language && $0.frequency(of: typed) != nil }
+            guard blocking.isEmpty || allowedByContext(
+                restored, in: model, over: blocking, typed: typed, sources: readings.sourceModels, context: context),
+                let range = readings.original.firstRange(of: typed)
+            else { continue }
             var replacement = readings.original
             replacement.replaceSubrange(range, with: restored)
             return Correction(
@@ -90,6 +99,47 @@ struct Detector {
                 typedWord: typed.lowercased())
         }
         return nil
+    }
+
+    /// Whether a restoration another source language blocks (`nino` is in English news as "El
+    /// Nino") may go ahead because of the words before it: one of them was known to the
+    /// restoration's language alone (`tambien nino` → `niño`), none was known to a blocking
+    /// language alone (`the nino` stays), and the restored word is clearly the more frequent one,
+    /// so a frequent word of the blocking language stays whatever the context (`debut`, `region`).
+    private func allowedByContext(
+        _ restored: String, in model: LanguageModel, over blocking: [LanguageModel], typed: String,
+        sources: [LanguageModel], context: [Set<Language>]
+    ) -> Bool {
+        let sourceLanguages = Set(sources.map(\.language))
+        let blockingLanguages = Set(blocking.map(\.language))
+        let only = context.suffix(Self.contextWords).compactMap { known -> Language? in
+            let known = known.intersection(sourceLanguages)
+            return known.count == 1 ? known.first : nil
+        }
+        guard only.contains(model.language), only.allSatisfy({ !blockingLanguages.contains($0) }),
+              let restoredFrequency = model.frequency(of: restored)
+        else { return false }
+        return blocking.allSatisfy { restoredFrequency - $0.frequency(of: typed)! >= Self.contextLead }
+    }
+
+    /// How many finished words before a word may show which language is being written. Tuned on
+    /// 60,000 words of 2023 news per language: 2 restores fewer, 5 put a German umlaut into
+    /// Spanish text (`generos` → `generös`).
+    static let contextWords = 3
+    /// How much more frequent (Zipf) the restored word must be in its language than the word as
+    /// typed in the language that blocks it: `niño` 4.97 over `nino` 3.21 in English passes,
+    /// `decisión` over English `decision` does not. 0.5 also let `generos` → `generös` through.
+    static let contextLead = 1.0
+
+    /// The source languages whose lexicon or accent table knows the word as typed: all that is
+    /// kept of a finished word to tell the next words' language (ADR 0003: never the word itself).
+    func languagesKnowing(_ word: [Key], layouts: ActiveLayouts) -> Set<Language> {
+        guard let readings = readings(of: word, layouts: layouts, recent: [:]), !Self.isSkipped(readings.original)
+        else { return [] }
+        let typed = readings.typed
+        return Set(readings.sourceModels.filter { model in
+            model.frequency(of: typed) != nil || accentTables[model.language]?.restoration(of: typed) != nil
+        }.map(\.language))
     }
 
     /// - Parameters:

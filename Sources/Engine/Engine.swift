@@ -83,6 +83,10 @@ public struct Engine: Sendable {
     /// A word erased completely: if the next word is typed with the same keys on a layout of
     /// another script, the erased spelling is learned.
     private var erased: (keys: [Key], layout: any Layout)?
+    /// For each of the last few finished words, oldest first, the languages that knew it: they tell
+    /// which language is being written when a word could be either (`nino` in Spanish text). Only
+    /// these tags are kept, never the words (ADR 0003).
+    private var recentLanguages: [Set<Language>] = []
     private var detector: Detector
 
     private struct Revertible {
@@ -219,11 +223,16 @@ public struct Engine: Sendable {
             previous = nil
             guard !word.isEmpty else { return .pass }
             let wordLayouts = trackedWordLayouts(layouts)
+            // Which languages know this word, kept for the next words once this one is decided; a
+            // word converted to another script says nothing about the languages of this one
+            var known = wordLayouts.map { detector.languagesKnowing(word, layouts: $0) } ?? []
+            defer { remember(known) }
             let layoutCorrection = wordLayouts.flatMap(correction)
             let quietApp = activeApp.map(settings.typoFixExcludedApps.contains) == true
             // Typed in the right layout, but without a ё, umlaut or accent it certainly takes
             if let wordLayouts, layoutCorrection == nil, settings.restoresAccents, !quietApp,
-               let restoration = detector.accentRestoration(for: word, layouts: wordLayouts, exceptions: settings.exceptions) {
+               let restoration = detector.accentRestoration(
+                   for: word, layouts: wordLayouts, exceptions: settings.exceptions, context: recentLanguages) {
                 streak = nil
                 let conversion = Revertible(correction: restoration, kind: .accentRestoration, boundary: boundary, switchedFrom: nil)
                 if boundary == .space { revertible = conversion }
@@ -271,6 +280,7 @@ public struct Engine: Sendable {
                     isKnownWord: correction.isKnownWord)
                 alsoCorrected = 1
             }
+            known = []
             let actions = correct(correction, activeLayoutID: layouts.current.id, alsoCorrected: alsoCorrected)
             let switched = actions.contains(.selectLayout(correction.targetLayoutID))
             let conversion = Revertible(
@@ -420,9 +430,16 @@ public struct Engine: Sendable {
         detector.prepareSpellCheck(for: word, layouts: wordLayouts, recent: recentLayouts)
     }
 
+    /// Keeps what a finished word told about the language being written, for the next few words.
+    private mutating func remember(_ languages: Set<Language>) {
+        recentLanguages.append(languages)
+        if recentLanguages.count > Detector.contextWords { recentLanguages.removeFirst() }
+    }
+
     /// Forgets the word and everything that ties the next event to earlier ones.
     private mutating func forgetAll() {
         forgetWord()
+        recentLanguages.removeAll()
         streak = nil
         revertible = nil
         finished = nil

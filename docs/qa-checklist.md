@@ -95,6 +95,7 @@ Run in each app: TextEdit, Safari (a text field), Chrome (a text field), Termina
 | Only U.S. and Russian – PC enabled, Settings → Layouts → Spanish ticked under "Languages without a layout": `ninos␣` → `niños ` (`ñ` is typed though no enabled layout has a key for it) | | | | | |
 | Same setup: ⌫ right after `ninos␣` → `niños` back to `ninos `, and `ninos` is left alone from then on | | | | | |
 | Same setup with Spanish unticked: `ninos␣` stays | | | | | |
+| Same setup, Spanish ticked: `tambien nino␣` → `también niño `; `nino␣` alone (after a click) and `they would nino␣` stay | | | | | |
 
 ## Fast typing
 
