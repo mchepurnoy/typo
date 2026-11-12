@@ -17,14 +17,14 @@ OUT = ROOT / "Sources" / "Typo" / "Resources" / "Localizable.xcstrings"
 CREDITS_EN = (
     "Free software under the GNU GPL v3 (GPL-3.0-only).\n\n"
     "Language data derived from the Leipzig Corpora Collection (eng_news_2024_1M, rus_news_2024_1M, "
-    "deu_news_2024_1M, spa_news_2024_1M), Universität Leipzig, wortschatz.uni-leipzig.de, licensed under "
+    "deu_news_2024_1M, spa_news_2024_1M, fra_news_2024_1M), Universität Leipzig, wortschatz.uni-leipzig.de, licensed under "
     "CC BY. Changes: lowercased, ё folded to е, reduced to trigram statistics and a frequency list.\n\n"
     "Words that take ё from eyo-kernel by Denis Seleznev (MIT License)."
 )
 CREDITS_RU = (
     "Свободная программа под лицензией GNU GPL v3 (GPL-3.0-only).\n\n"
     "Языковые данные получены из Leipzig Corpora Collection (eng_news_2024_1M, rus_news_2024_1M, "
-    "deu_news_2024_1M, spa_news_2024_1M), Universität Leipzig, wortschatz.uni-leipzig.de, лицензия "
+    "deu_news_2024_1M, spa_news_2024_1M, fra_news_2024_1M), Universität Leipzig, wortschatz.uni-leipzig.de, лицензия "
     "CC BY. Изменения: приведены к нижнему регистру, ё заменена на е, сведены к статистике триграмм "
     "и частотному словарю.\n\n"
     "Слова с буквой ё — из eyo-kernel Дениса Селезнёва (лицензия MIT)."
@@ -141,6 +141,7 @@ TRANSLATIONS = {
     "Russian": "русский",
     "German": "немецкий",
     "Spanish": "испанский",
+    "French": "французский",
     # Settings: Statistics (abbreviated units do not change with the number, in English or Russian)
     "Today": "Сегодня",
     "7 days": "7 дней",

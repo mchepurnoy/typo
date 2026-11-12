@@ -20,7 +20,7 @@
 
 typo sits in the menu bar and checks every word when you press Space. If the word only makes sense in your other layout, typo retypes it there, and after two such words in a row it switches the layout for you. Like Punto Switcher, but open source, offline and native.
 
-- **Accurate.** On news text it has never seen, typo fixes **over 99%** of words typed in the wrong layout and touches **fewer than 1 in 10,000** words typed right. Russian, English, German and Spanish.
+- **Accurate.** On news text it has never seen, typo fixes **over 99%** of words typed in the wrong layout and touches **fewer than 1 in 10,000** words typed right. Russian, English, German, Spanish and French (on the French AZERTY layout, words with é, è, ç or à come out as digits on the Russian one and are left alone).
 - **Leaves tech words alone.** `nginx` or `nodejs` in the middle of a Russian sentence comes back in Latin without flipping your layout. Links, paths, commands, `camelCase` and words with digits are never changed.
 - **Private.** Only the current word is kept, in memory. Nothing you type is written to disk or sent anywhere, and password fields are skipped entirely.
 - **Native and light.** A small Swift app: no account, no Electron, no network except optional update checks. It decides in under a millisecond per word.

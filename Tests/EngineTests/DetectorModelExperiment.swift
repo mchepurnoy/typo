@@ -8,7 +8,7 @@ import Testing
 @Suite("Detector model experiment", .enabled(if: ProcessInfo.processInfo.environment["TYPO_EXPERIMENT"] != nil))
 struct DetectorModelExperiment {
     private static let us = FixtureLayout.us, ru = FixtureLayout.russianPC
-    private static let de = FixtureLayout.german, es = FixtureLayout.spanish
+    private static let de = FixtureLayout.german, es = FixtureLayout.spanish, fr = FixtureLayout.french
     private static let models = Dictionary(uniqueKeysWithValues: BundledModels.all.map { ($0.language, $0) })
     private static let punctuation = Set(".,;:!?'\"()[]{}<>«»…/@#$~-*&%=+|\\^")
 
@@ -17,6 +17,7 @@ struct DetectorModelExperiment {
         (.russian, ru, us, [.english]), (.english, us, ru, [.russian]), (.german, de, ru, [.russian]),
         (.spanish, es, ru, [.russian]), (.english, us, us, [.english]), (.russian, ru, ru, [.russian]),
         (.german, de, de, [.german]), (.spanish, es, es, [.spanish]),
+        (.french, fr, ru, [.russian]), (.russian, ru, fr, [.french]), (.french, fr, fr, [.french]),
     ]
 
     private static func core(_ keys: [String]) -> String {
@@ -50,7 +51,7 @@ struct DetectorModelExperiment {
     private static func samples(_ words: [(String, Double)], _ scenario: (Language, FixtureLayout, FixtureLayout, [Language])) -> [Sample] {
         let (_, intended, active, sources) = scenario
         let isWrong = intended.language!.script != active.language!.script
-        let target = isWrong ? intended : [us, ru, de, es].first { $0.language!.script != active.language!.script }!
+        let target = isWrong ? intended : [us, ru, de, es, fr].first { $0.language!.script != active.language!.script }!
         return words.compactMap { word, weight in
             guard let keys = intended.keysIfTypable(word),
                   let x = features(keys, typedOn: active, target: target, sources: sources) else { return nil }
@@ -153,7 +154,7 @@ struct DetectorModelExperiment {
             let modelPositive = held.filter { model.probability($0.x) >= threshold }.count
 
             var engine = Engine(languageModels: BundledModels.all, settings: .init(switchThreshold: nil))
-            let enabled = Array(Set([intended, active].map(\.id))).compactMap { id in [Self.us, Self.ru, Self.de, Self.es].first { $0.id == id } }
+            let enabled = Array(Set([intended, active].map(\.id))).compactMap { id in [Self.us, Self.ru, Self.de, Self.es, Self.fr].first { $0.id == id } }
             let layouts = ActiveLayouts(current: active, enabled: enabled)
             var rulesPositive = 0, counted = 0
             for (word, _) in Self.heldOutWords(language) {

@@ -500,6 +500,7 @@ extension Language {
         case .russian: String(localized: "Russian")
         case .german: String(localized: "German")
         case .spanish: String(localized: "Spanish")
+        case .french: String(localized: "French")
         }
     }
 }

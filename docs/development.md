@@ -108,7 +108,7 @@ The `Engine` module (pure Swift, no AppKit/Carbon) holds all correction logic an
 
 ## Language models
 
-Detection uses one language model per supported language (English, Russian, German, Spanish) in `LanguageModels/`, built from the Leipzig Corpora Collection (CC BY). To rebuild them (downloads ≈1 GB once):
+Detection uses one language model per supported language (English, Russian, German, Spanish, French) in `LanguageModels/`, built from the Leipzig Corpora Collection (CC BY). To rebuild them (downloads ≈1 GB once):
 
 ```sh
 scripts/build-language-models.py

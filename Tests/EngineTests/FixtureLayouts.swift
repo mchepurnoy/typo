@@ -40,6 +40,8 @@ struct FixtureLayout: Layout {
     static let russianPC = FixtureLayout(id: "com.apple.keylayout.RussianWin", language: .russian, plain: russianPCPlain, shifted: russianPCShifted)
     static let german = FixtureLayout(id: "com.apple.keylayout.German", language: .german, plain: germanPlain, shifted: germanShifted)
     static let spanish = FixtureLayout(id: "com.apple.keylayout.Spanish", language: .spanish, plain: spanishPlain, shifted: spanishShifted)
+    /// AZERTY: é, è, ç, à and ù have keys of their own; ^ and ` are dead keys.
+    static let french = FixtureLayout(id: "com.apple.keylayout.French", language: .french, plain: frenchPlain, shifted: frenchShifted)
     /// A layout typo has no language model for (e.g. Greek); same keys as U.S. so it can be typed on.
     static let unsupported = FixtureLayout(id: "com.apple.keylayout.Greek", language: nil, plain: usPlain, shifted: usShifted)
 }
@@ -112,5 +114,22 @@ extension FixtureLayout {
         24: "+", 25: "(", 26: "&", 27: "_", 28: "*", 29: ")", 30: "", 31: "O",
         32: "U", 33: "º", 34: "I", 35: "P", 37: "L", 38: "J", 39: ":", 40: "K",
         41: "Ñ", 42: "\"", 43: "¿", 44: "Ç", 45: "N", 46: "M", 47: "?", 50: ">",
+    ]
+    // com.apple.keylayout.French
+    static let frenchPlain: [UInt16: String] = [
+        0: "q", 1: "s", 2: "d", 3: "f", 4: "h", 5: "g", 6: "w", 7: "x",
+        8: "c", 9: "v", 10: "@", 11: "b", 12: "a", 13: "z", 14: "e", 15: "r",
+        16: "y", 17: "t", 18: "&", 19: "é", 20: "\"", 21: "\'", 22: "§", 23: "(",
+        24: "-", 25: "ç", 26: "è", 27: ")", 28: "!", 29: "à", 30: "$", 31: "o",
+        32: "u", 33: "", 34: "i", 35: "p", 37: "l", 38: "j", 39: "ù", 40: "k",
+        41: "m", 42: "", 43: ";", 44: "=", 45: "n", 46: ",", 47: ":", 50: "<",
+    ]
+    static let frenchShifted: [UInt16: String] = [
+        0: "Q", 1: "S", 2: "D", 3: "F", 4: "H", 5: "G", 6: "W", 7: "X",
+        8: "C", 9: "V", 10: "#", 11: "B", 12: "A", 13: "Z", 14: "E", 15: "R",
+        16: "Y", 17: "T", 18: "1", 19: "2", 20: "3", 21: "4", 22: "6", 23: "5",
+        24: "_", 25: "9", 26: "7", 27: "°", 28: "8", 29: "0", 30: "*", 31: "O",
+        32: "U", 33: "", 34: "I", 35: "P", 37: "L", 38: "J", 39: "%", 40: "K",
+        41: "M", 42: "£", 43: ".", 44: "+", 45: "N", 46: "?", 47: "/", 50: ">",
     ]
 }

@@ -90,14 +90,14 @@ struct LanguageModelFormatTests {
 @Suite("Bundled language models")
 struct BundledLanguageModelTests {
     @Test("Each language's file loads as that language", arguments: [
-        ("en", Language.english), ("ru", .russian), ("de", .german), ("es", .spanish),
+        ("en", Language.english), ("ru", .russian), ("de", .german), ("es", .spanish), ("fr", .french),
     ])
     func loads(_ code: String, _ language: Language) throws {
         #expect(try BundledModels.load(code).language == language)
     }
 
     @Test("Real words are plausible in their language", arguments: [
-        ("ru", "привет"), ("en", "hello"), ("de", "hallo"), ("es", "hola"),
+        ("ru", "привет"), ("en", "hello"), ("de", "hallo"), ("es", "hola"), ("fr", "bonjour"),
     ])
     func realWordsPlausible(_ code: String, _ word: String) throws {
         let model = try BundledModels.load(code)
@@ -112,7 +112,7 @@ struct BundledLanguageModelTests {
         #expect(model.trigramScore(of: word) < -6)
     }
 
-    @Test("Each file loads in well under 100 ms", .timing, arguments: ["en", "ru", "de", "es"])
+    @Test("Each file loads in well under 100 ms", .timing, arguments: ["en", "ru", "de", "es", "fr"])
     func loadsFast(_ code: String) throws {
         let clock = ContinuousClock()
         let elapsed = try clock.measure { _ = try BundledModels.load(code) }

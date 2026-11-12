@@ -10,10 +10,11 @@ public enum Language: String, Sendable, CaseIterable {
     case russian = "ru"
     case german = "de"
     case spanish = "es"
+    case french = "fr"
 
     public var script: Script {
         switch self {
-        case .english, .german, .spanish: .latin
+        case .english, .german, .spanish, .french: .latin
         case .russian: .cyrillic
         }
     }

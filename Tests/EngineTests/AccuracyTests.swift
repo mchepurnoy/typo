@@ -3,7 +3,7 @@ import Foundation
 import Testing
 
 extension BundledModels {
-    /// Loaded once: parsing all four files is slow in debug builds.
+    /// Loaded once: parsing all five files is slow in debug builds.
     static let all: [LanguageModel] = Language.allCases.map { language in
         do { return try load(language.rawValue) } catch { fatalError("\(language): \(error)") }
     }
@@ -24,6 +24,8 @@ private struct Scenario: CustomTestStringConvertible, Sendable {
     let enabled: [FixtureLayout]
     /// Languages written without a layout of their own (Spanish on U.S.).
     var extra: Set<Language> = []
+    /// The share of short words that must be corrected: they are only after a corrected word.
+    var shortWordRate = 0.9
 
     var isWrongLayout: Bool { intendedOn.language?.script != typedOn.language?.script }
     var testDescription: String {
@@ -45,6 +47,10 @@ private struct Tally {
     var wrong: [String] = []
     /// Wrong-layout words of 3+ letters left uncorrected.
     var missed: [String] = []
+    /// Wrong-layout words typo cannot correct by design, so not counted above: on the active layout
+    /// a key of theirs types a digit (a skipped word: French é è ç à on Russian – PC) or nothing
+    /// (a dead key: Russian х on French AZERTY).
+    var unreachable = 0
 
     var longRate: Double { Double(longRight) / Double(max(longWords, 1)) }
     var wrongRate: Double { Double(wrong.count) / Double(max(words, 1)) }
@@ -71,6 +77,14 @@ private func run(_ scenario: Scenario, spellChecker: (any SpellChecker)? = nil) 
         guard let keys = scenario.intendedOn.keysIfTypable(word) else { continue }
         for key in keys { _ = engine.handle(.key(key), layouts: layouts) }
         let response = engine.handle(.boundary(.space), layouts: layouts)
+        if scenario.isWrongLayout, keys.contains(where: { key in
+            let typed = scenario.typedOn.character(for: key)
+            return typed.isEmpty || typed.contains(where: \.isNumber)
+        }) {
+            tally.unreachable += 1
+            if response != .pass && !response.actions.contains(where: { $0 == .type(word) }) { tally.wrong.append(word) }
+            continue
+        }
         // A retroactive correction types the previous word too: "не привет"
         let corrected = response.actions.contains { action in
             guard case .type(let text) = action else { return false }
@@ -95,22 +109,28 @@ private func run(_ scenario: Scenario, spellChecker: (any SpellChecker)? = nil) 
 struct AccuracyTests {
     private static let us = FixtureLayout.us, ru = FixtureLayout.russianPC
     private static let de = FixtureLayout.german, es = FixtureLayout.spanish
+    private static let fr = FixtureLayout.french
 
     @Test("Wrong-layout words of 3+ letters are corrected", arguments: [
         Scenario(language: .russian, intendedOn: ru, typedOn: us, enabled: [us, ru]),
         Scenario(language: .english, intendedOn: us, typedOn: ru, enabled: [us, ru]),
         Scenario(language: .german, intendedOn: de, typedOn: ru, enabled: [de, ru]),
         Scenario(language: .spanish, intendedOn: es, typedOn: ru, enabled: [es, ru]),
+        // A third of French words have é, è, ç or à, digits on Russian – PC: never corrected, so the short
+        // word after them is not either
+        Scenario(language: .french, intendedOn: fr, typedOn: ru, enabled: [fr, ru], shortWordRate: 0.75),
+        Scenario(language: .russian, intendedOn: ru, typedOn: fr, enabled: [fr, ru]),
         // An extra language's words are known, but must not keep Russian words from being corrected ("tot" is "еще")
         Scenario(language: .russian, intendedOn: ru, typedOn: us, enabled: [us, ru], extra: [.spanish, .german]),
     ])
     private func recall(_ scenario: Scenario) {
         let tally = run(scenario)
         print("recall \(scenario.testDescription): \(tally.longRight)/\(tally.longWords) = \(tally.longRate), "
-            + "short words \(tally.shortRight)/\(tally.shortWords), wrong \(tally.wrong.count), missed e.g. \(Set(tally.missed).sorted().prefix(80))")
+            + "short words \(tally.shortRight)/\(tally.shortWords), wrong \(tally.wrong.count), "
+            + "not correctable by design \(tally.unreachable), missed e.g. \(Set(tally.missed).sorted().prefix(80))")
         #expect(tally.longRate >= 0.97)
         // In running wrong-layout text most short words follow a corrected word
-        #expect(Double(tally.shortRight) / Double(max(tally.shortWords, 1)) >= 0.9)
+        #expect(Double(tally.shortRight) / Double(max(tally.shortWords, 1)) >= scenario.shortWordRate)
         #expect(tally.wrong.isEmpty, "\(tally.wrong)")
     }
 
@@ -121,6 +141,8 @@ struct AccuracyTests {
         Scenario(language: .spanish, intendedOn: es, typedOn: es, enabled: [es, ru]),
         Scenario(language: .german, intendedOn: us, typedOn: us, enabled: [us, de, ru]),
         Scenario(language: .spanish, intendedOn: us, typedOn: us, enabled: [us, es, ru]),
+        Scenario(language: .french, intendedOn: fr, typedOn: fr, enabled: [fr, ru]),
+        Scenario(language: .french, intendedOn: us, typedOn: us, enabled: [us, fr, ru]),
         Scenario(language: .english, intendedOn: us, typedOn: us, enabled: [us, ru], extra: [.spanish, .german]),
     ])
     private func falsePositives(_ scenario: Scenario) {
@@ -133,6 +155,7 @@ struct AccuracyTests {
         Scenario(language: .english, intendedOn: us, typedOn: us, enabled: [us, ru]),
         Scenario(language: .russian, intendedOn: ru, typedOn: ru, enabled: [us, ru]),
         Scenario(language: .german, intendedOn: de, typedOn: de, enabled: [de, ru]),
+        Scenario(language: .french, intendedOn: fr, typedOn: fr, enabled: [fr, ru]),
     ])
     private func quirkySpellChecker(_ scenario: Scenario) {
         let baseline = run(scenario)
@@ -143,8 +166,9 @@ struct AccuracyTests {
 
     @Test("Deciding a word takes at most 1 ms at p99", .timing, arguments: [
         ([Self.us, Self.ru, Self.de], Set<Language>()),
-        // Two extra languages judge every Latin word too, and their accent tables are looked up
-        ([Self.us, Self.ru], Set<Language>([.spanish, .german])),
+        // Every other Latin language as an extra language judges every Latin word too, and their
+        // accent tables are looked up
+        ([Self.us, Self.ru], Set<Language>([.spanish, .german, .french])),
     ])
     func decisionTime(_ enabled: [FixtureLayout], _ extra: Set<Language>) {
         var engine = Engine(

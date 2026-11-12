@@ -81,25 +81,41 @@ struct Detector {
     ) -> Correction? {
         guard let readings = readings(of: word, layouts: layouts, recent: [:]),
               !Self.isSkipped(readings.original),
-              !exceptions.contains(readings.typed.lowercased()),
-              readings.typed.allSatisfy(\.isLetter)
+              !exceptions.contains(readings.typed.lowercased())
         else { return nil }
-        let typed = readings.typed
-        for model in readings.sourceModels {
+        // A French elided word ("l'ecole", "d'etre") is restored after its apostrophe
+        let (elided, typed) = Self.splitElision(readings.typed)
+        guard typed.allSatisfy(\.isLetter) else { return nil }
+        for model in readings.sourceModels where elided.isEmpty || model.language == .french {
             guard let table = accentTables[model.language], let restored = table.restoration(of: typed) else { continue }
             let blocking = readings.sourceModels.filter { $0.language != model.language && $0.frequency(of: typed) != nil }
             guard blocking.isEmpty || allowedByContext(
                 restored, in: model, over: blocking, typed: typed, sources: readings.sourceModels, context: context),
-                let range = readings.original.firstRange(of: typed)
+                let range = readings.original.firstRange(of: readings.typed)
             else { continue }
             var replacement = readings.original
-            replacement.replaceSubrange(range, with: restored)
+            replacement.replaceSubrange(range, with: elided + restored)
             return Correction(
                 original: readings.original, replacement: replacement, targetLayoutID: layouts.current.id,
-                typedWord: typed.lowercased())
+                typedWord: readings.typed.lowercased())
         }
         return nil
     }
+
+    /// A word split after an elided article or pronoun: "l'ecole" → ("l'", "ecole"), "qu'a" →
+    /// ("qu'", "a"); any other word → ("", word). The elided part is a few letters and one
+    /// apostrophe, straight or curly.
+    private static func splitElision(_ word: String) -> (elided: String, rest: String) {
+        guard let apostrophe = word.firstIndex(where: { $0 == "'" || $0 == "’" }) else { return ("", word) }
+        let elided = word[..<apostrophe]
+        let rest = word[word.index(after: apostrophe)...]
+        guard (1...maxElidedLetters).contains(elided.count), elided.allSatisfy(\.isLetter), !rest.isEmpty
+        else { return ("", word) }
+        return (String(word[...apostrophe]), String(rest))
+    }
+
+    /// The longest elided word before an apostrophe: "lorsqu'", "puisqu'".
+    private static let maxElidedLetters = 7
 
     /// Whether a restoration another source language blocks (`nino` is in English news as "El
     /// Nino") may go ahead because of the words before it: one of them was known to the
@@ -293,9 +309,12 @@ struct Detector {
             alphabet += Self.alphabet(model.language).filter { !alphabet.contains($0) }
             vowels.formUnion(Self.vowels(model.language))
         }
+        // The slips are lowercase letters: only Russian's ё needs folding before a lookup, and
+        // folding every slip of a Latin word would cost more than all the lookups
+        let folds = layouts.current.language?.script == .cyrillic
         var candidates: [String: Double] = [:]
         Self.forEachSlip(of: typed, keys: keys, layout: layouts.current, alphabet: alphabet, vowels: vowels) { edit in
-            let normalized = LanguageModel.normalize(edit)
+            let normalized = folds ? LanguageModel.normalize(edit) : edit
             for model in readings.sourceModels {
                 if let frequency = model.frequency(ofNormalized: normalized), frequency > candidates[edit] ?? -.infinity {
                     candidates[edit] = frequency
@@ -387,6 +406,7 @@ struct Detector {
         case .russian: Array("абвгдежзийклмнопрстуфхцчшщъыьэюя")
         case .german: Array("abcdefghijklmnopqrstuvwxyzäöüß")
         case .spanish: Array("abcdefghijklmnopqrstuvwxyzáéíóúüñ")
+        case .french: Array("abcdefghijklmnopqrstuvwxyzàâæçéèêëîïôœùûüÿ")
         }
     }
 
@@ -396,6 +416,7 @@ struct Detector {
         case .russian: Set("аеёиоуыэюя")
         case .german: Set("aeiouyäöü")
         case .spanish: Set("aeiouáéíóúü")
+        case .french: Set("aeiouyàâæéèêëîïôœùûüÿ")
         }
     }
 

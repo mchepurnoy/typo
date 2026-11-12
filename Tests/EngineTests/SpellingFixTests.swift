@@ -111,7 +111,7 @@ struct SpellingFixTests {
     }
 
     @Test("Looking for a fix takes at most 1 ms at p99, even when every word is called misspelled", .timing,
-          arguments: [Set<Language>(), [.spanish, .german]])
+          arguments: [Set<Language>(), [.spanish, .german, .french]])
     func decisionTime(_ extra: Set<Language>) throws {
         let url = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "Accuracy/en.txt")
         let words = try String(contentsOf: url, encoding: .utf8).split(separator: "\n").map(String.init)

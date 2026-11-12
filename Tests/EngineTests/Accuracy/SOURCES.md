@@ -1,6 +1,6 @@
 # Accuracy corpus
 
-`en.txt`, `ru.txt`, `de.txt`, `es.txt`: the first 3,000 words of running text from the Leipzig Corpora Collection news corpora `eng_news_2023_10K`, `rus_news_2023_10K`, `deu_news_2023_10K` and `spa_news_2023_10K` (Universität Leipzig, https://wortschatz.uni-leipzig.de, CC BY; see `LanguageModels/SOURCES.md` for the licence note and citation). Changes: reduced to words made of the language's letters, one per line, punctuation removed.
+`en.txt`, `ru.txt`, `de.txt`, `es.txt`, `fr.txt`: the first 3,000 words of running text from the Leipzig Corpora Collection news corpora `eng_news_2023_10K`, `rus_news_2023_10K`, `deu_news_2023_10K`, `spa_news_2023_10K` and `fra_news_2023_10K` (Universität Leipzig, https://wortschatz.uni-leipzig.de, CC BY; see `LanguageModels/SOURCES.md` for the licence note and citation). Changes: reduced to words made of the language's letters, one per line, punctuation removed.
 
 The language models are built from the 2024 corpora, so this text is held out. Regenerate with `scripts/build-accuracy-corpus.py`.
 

@@ -40,7 +40,7 @@ Setup: turn off System Settings → Keyboard → Input Sources → "Automaticall
 - [ ] Words shows one list at a time (Exceptions | Learned words), newest first: add `aaa`, then `bbb` → `bbb` is on top; adding `aaa` again moves it back to the top. Searching `cegth` or `супер` (any case) finds the word `cegth`; the search applies to whichever list is shown
 - [ ] Upgrade: exceptions saved by 0.2.1 or earlier are all still listed, A to Z, after the ones added since (to repeat: `defaults delete app.typo.Typo.dev wordsInAddedOrder` and relaunch)
 - [ ] Thousands of words: quit Typo, back up its settings with `defaults export app.typo.Typo.dev ~/typo-settings.plist`, write 10 000 exceptions with `defaults write app.typo.Typo.dev exceptions -array $(python3 -c 'import random, string; print(" ".join("".join(random.choices(string.ascii_lowercase, k=random.randint(4, 10))) for _ in range(10000)))')`, launch Typo. Settings → Words opens without a visible pause and shows 50 words and "Show all (N)"; typing in the search field and in "Add a word" stays smooth; "Show all" scrolls smoothly to the end; removing a word is immediate. Afterwards quit Typo and restore with `defaults import app.typo.Typo.dev ~/typo-settings.plist`
-- [ ] Layouts lists every enabled layout, with U.S. and Russian – PC marked supported and an unsupported one (e.g. Ukrainian) marked "Not supported"
+- [ ] Layouts lists every enabled layout, with U.S. and Russian – PC marked supported and an unsupported one (e.g. Ukrainian) marked "Not supported"; with French (AZERTY) enabled, it is marked French
 - [ ] Layouts → "Languages without a layout" lists the supported languages with no enabled layout (with U.S. and Russian – PC: German and Spanish). With Spanish in System Settings → General → Language & Region → Preferred Languages and the list never changed (`defaults read app.typo.Typo.dev extraLanguages` finds nothing), Spanish starts ticked and German not. Untick Spanish, quit and relaunch: it stays unticked. Enable the Spanish layout: Spanish leaves the list
 
 ## Correction
@@ -54,6 +54,7 @@ Run in each app: TextEdit, Safari (a text field), Chrome (a text field), Termina
 | `ghbdtn d␣` on U.S. → `привет в ` (the second correction, so the layout switches to Russian); `plan b␣` stays | | | | | |
 | `ghbdtn API rfr␣` → `привет API как`, and the layout does not switch | | | | | |
 | `,eltn␣` on U.S. → `будет ` (U.S. punctuation keys are Russian letters) | | | | | |
+| With French (AZERTY) and Russian – PC enabled: `ghbdtn␣` on French → `привет `; `ищтощгк␣` on Russian – PC → `bonjour ` | | | | | |
 | `Ghbdtn␣` on U.S. → `Привет ` | | | | | |
 | With Caps Lock on, `GHBDTN␣` on U.S. → `ПРИВЕТ ` | | | | | |
 | `ghbdtn2␣`, `ghbdtn_rfr␣`, `getValue␣` on U.S. are left alone (skipped words) | | | | | |
@@ -96,6 +97,8 @@ Run in each app: TextEdit, Safari (a text field), Chrome (a text field), Termina
 | Same setup: ⌫ right after `ninos␣` → `niños` back to `ninos `, and `ninos` is left alone from then on | | | | | |
 | Same setup with Spanish unticked: `ninos␣` stays | | | | | |
 | Same setup, Spanish ticked: `tambien nino␣` → `también niño `; `nino␣` alone (after a click) and `they would nino␣` stay | | | | | |
+| On French (AZERTY) with Russian – PC: `deja␣` → `déjà `, `coeur␣` → `cœur `, `l'ecole␣` → `l'école `; `a␣`, `ou␣`, `la␣`, `sur␣`, `Ecole␣` stay | | | | | |
+| On U.S. with French ticked under "Languages without a layout": `etre␣` → `être `, `francais␣` → `français `; `cafe␣`, `resume␣` stay (English) | | | | | |
 
 ## Fast typing
 

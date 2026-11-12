@@ -30,6 +30,8 @@ CORPORA = {
            "abcdefghijklmnopqrstuvwxyzäöüß", "-"),
     "es": ("spa_news_2024_1M", "4666b54caad54cd46cdfea80e7cb727663b220c2ead871b4ccf6285df0599090",
            "abcdefghijklmnopqrstuvwxyzáéíóúüñ", "-"),
+    "fr": ("fra_news_2024_1M", "907eed297ab7b5fbe0ea87105084899158f660890e87f121b2a24eb9853a6467",
+           "abcdefghijklmnopqrstuvwxyzàâæçéèêëîïôœùûüÿ", "'-"),
 }
 
 FORMAT_VERSION = 1

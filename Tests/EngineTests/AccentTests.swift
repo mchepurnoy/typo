@@ -6,10 +6,11 @@ private let us = FixtureLayout.us
 private let russianPC = FixtureLayout.russianPC
 private let german = FixtureLayout.german
 private let spanish = FixtureLayout.spanish
+private let french = FixtureLayout.french
 
 extension BundledModels {
     /// The bundled accent tables (scripts/build-accent-tables.py), loaded once.
-    static let accents: [AccentTable] = ["ru", "de", "es"].map { code in
+    static let accents: [AccentTable] = ["ru", "de", "es", "fr"].map { code in
         let url = directory.appending(path: "\(code).accents")
         do { return try AccentTable(parsing: String(contentsOf: url, encoding: .utf8)) } catch { fatalError("\(code): \(error)") }
     }
@@ -121,7 +122,7 @@ struct AccentTests {
 
     @Test("Correctly typed held-out text is never changed except to add a certain ё")
     func heldOutText() throws {
-        for (code, layout) in [("ru", russianPC), ("de", german), ("es", spanish)] {
+        for (code, layout) in [("ru", russianPC), ("de", german), ("es", spanish), ("fr", french)] {
             let url = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "Accuracy/\(code).txt")
             let words = try String(contentsOf: url, encoding: .utf8).split(separator: "\n").map(String.init)
             var engine = Engine(languageModels: BundledModels.all, accentTables: BundledModels.accents)

@@ -24,6 +24,8 @@ CORPORA = {
     "de": ("deu_news_2023_10K", "166d8ff8b4e6c30d38c6fdf9cbe847f7ba6ca18da15633799a72dc11cfee7380", "a-zA-ZäöüÄÖÜß"),
     "es": ("spa_news_2023_10K", "8679c4ab0f1fd19d379155493611e347f0379e34e8870417fe3c039a5a120aa4",
            "a-zA-ZáéíóúüñÁÉÍÓÚÜÑ"),
+    "fr": ("fra_news_2023_10K", "0b1488c788e2cea002b6bada16412f47fe54f5b68c2ad8751b95bdbd156cc67b",
+           "a-zA-ZàâæçéèêëîïôœùûüÿÀÂÆÇÉÈÊËÎÏÔŒÙÛÜŸ"),
 }
 
 

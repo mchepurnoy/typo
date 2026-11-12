@@ -145,7 +145,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         Task {
-            // Parsing ~4 MB of model text stays off the main thread
+            // Parsing ~7 MB of model text stays off the main thread
             let (models, accents) = await Task.detached(priority: .userInitiated) {
                 (Self.loadLanguageModels(), Self.loadAccentTables())
             }.value
@@ -178,7 +178,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Free software under the GNU GPL v3 (GPL-3.0-only).
 
             Language data derived from the Leipzig Corpora Collection (eng_news_2024_1M, rus_news_2024_1M, \
-            deu_news_2024_1M, spa_news_2024_1M), Universität Leipzig, wortschatz.uni-leipzig.de, licensed under \
+            deu_news_2024_1M, spa_news_2024_1M, fra_news_2024_1M), Universität Leipzig, wortschatz.uni-leipzig.de, licensed under \
             CC BY. Changes: lowercased, ё folded to е, reduced to trigram statistics and a frequency list.
 
             Words that take ё from eyo-kernel by Denis Seleznev (MIT License).
