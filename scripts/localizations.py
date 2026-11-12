@@ -131,6 +131,12 @@ TRANSLATIONS = {
     "Typo corrects between supported layouts of different scripts (Latin ↔ Cyrillic). Supported languages: %@.":
         "Typo исправляет между поддерживаемыми раскладками с разными алфавитами (латиница ↔ кириллица). "
         "Поддерживаемые языки: %@.",
+    "Languages without a layout": "Языки без раскладки",
+    "Tick the languages you type on another language's layout, e.g. Spanish on U.S.: Typo then restores their "
+    "accents and fixes their typos. Languages listed in Language & Region settings start ticked.":
+        "Отметьте языки, на которых печатаете в раскладке другого языка, например испанский в U.S.: Typo "
+        "будет расставлять в них акценты и исправлять опечатки. Сначала отмечены языки из настроек "
+        "«Язык и регион».",
     "English": "английский",
     "Russian": "русский",
     "German": "немецкий",

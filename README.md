@@ -53,7 +53,7 @@ Just type. A word is fixed when you press Space, Return or Tab.
 | Pause typo, e.g. for a password | Press and release **⌃⌘** together. Again to resume. |
 | Never touch some app | **Settings → Excluded Apps.** |
 
-typo also fixes typos in the right layout (`превет` → `привет`, `teh` → `the`) and restores a certain ё, umlaut or accent (`еще` → `ещё`, `konnen` → `können`). **Settings → Statistics** shows how many words it fixed and roughly how much time that saved. Every one of these can be turned off in Settings.
+typo also fixes typos in the right layout (`превет` → `привет`, `teh` → `the`) and restores a certain ё, umlaut or accent (`еще` → `ещё`, `konnen` → `können`). No Spanish or German layout is needed for that: tick the languages you type on U.S. in **Settings → Layouts → Languages without a layout**, and `ninos` becomes `niños`. **Settings → Statistics** shows how many words it fixed and roughly how much time that saved. Every one of these can be turned off in Settings.
 
 ## Privacy
 

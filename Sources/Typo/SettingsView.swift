@@ -22,7 +22,7 @@ struct SettingsView: View {
                 .tabItem { Label("Words", systemImage: "text.badge.checkmark") }
             ExcludedAppsTab(settings: settings)
                 .tabItem { Label("Excluded Apps", systemImage: "nosign") }
-            LayoutsTab(missingLanguages: status.missingLanguages)
+            LayoutsTab(settings: settings, missingLanguages: status.missingLanguages)
                 .tabItem { Label("Layouts", systemImage: "keyboard") }
             StatisticsTab(statistics: statistics)
                 .tabItem { Label("Statistics", systemImage: "chart.bar") }
@@ -358,6 +358,7 @@ private struct LayoutsTab: View {
         Language.allCases.map(\.displayName).formatted(.list(type: .and))
     }
 
+    let settings: SettingsStore
     let missingLanguages: [String]
     @State private var layouts: [SystemLayout] = []
     @State private var keyMaps: [String: [String: Key]] = [:]
@@ -391,6 +392,24 @@ private struct LayoutsTab: View {
                 }
             } footer: {
                 Text("Typo corrects between supported layouts of different scripts (Latin ↔ Cyrillic). Supported languages: \(Self.supportedLanguages).")
+            }
+
+            // A language that gains a layout leaves the list: it is judged anyway
+            let withoutLayout = Language.allCases.filter { language in
+                usable(language) != nil && !layouts.contains { $0.language == language }
+            }
+            if !withoutLayout.isEmpty {
+                Section {
+                    ForEach(withoutLayout, id: \.self) { language in
+                        Toggle(language.displayName, isOn: Binding(
+                            get: { settings.extraLanguages.contains(language) },
+                            set: { settings.setExtraLanguage(language, isOn: $0) }))
+                    }
+                } header: {
+                    Text("Languages without a layout")
+                } footer: {
+                    Text("Tick the languages you type on another language's layout, e.g. Spanish on U.S.: Typo then restores their accents and fixes their typos. Languages listed in Language & Region settings start ticked.")
+                }
             }
         }
         .formStyle(.grouped)

@@ -11,6 +11,9 @@ _Avoid_: keyboard, language (a layout is not a language)
 **Supported language**:
 A language typo ships a language model for (initially English, Russian, German, Spanish). Layouts whose language is unsupported never take part in corrections.
 
+**Extra language**:
+A supported language the user writes on a layout of another language of the same script (Spanish on U.S.), chosen in Settings. It judges typed words like the language of an enabled layout, but is never a correction's target.
+
 **Language model**:
 Per-language data that judges how plausible a word is in that language; added as data, not code.
 _Avoid_: dictionary (it is more than a word list), AI

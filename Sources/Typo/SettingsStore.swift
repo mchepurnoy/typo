@@ -18,6 +18,7 @@ final class SettingsStore {
         static let playsSound = "playsSound"
         static let fixesTypos = "fixesTypos"
         static let restoresAccents = "restoresAccents"
+        static let extraLanguages = "extraLanguages"
         static let pauseShortcut = "pauseShortcut"
         static let wordsInAddedOrder = "wordsInAddedOrder"
     }
@@ -99,6 +100,33 @@ final class SettingsStore {
         }
     }
 
+    /// Extra languages the user chose, or `nil` until they change the list: then the default
+    /// follows the macOS preferred languages, and is never stored.
+    private var chosenExtraLanguages: Set<Language>? {
+        didSet {
+            guard chosenExtraLanguages != oldValue else { return }
+            defaults.set(chosenExtraLanguages?.map(\.rawValue).sorted(), forKey: Key.extraLanguages)
+            onChange?(engineSettings)
+        }
+    }
+
+    /// Extra languages: supported languages the user writes on a layout of another language
+    /// (Spanish on U.S.). Until the user changes the list, the supported languages among the macOS
+    /// preferred languages; one that has a layout is judged anyway, so being in the list changes nothing.
+    var extraLanguages: Set<Language> { chosenExtraLanguages ?? Self.preferredLanguages }
+
+    /// Ticks or unticks one extra language; from then on the user's list is kept.
+    func setExtraLanguage(_ language: Language, isOn: Bool) {
+        var languages = extraLanguages
+        if isOn { languages.insert(language) } else { languages.remove(language) }
+        chosenExtraLanguages = languages
+    }
+
+    /// The supported languages in System Settings → General → Language & Region → Preferred Languages.
+    private static var preferredLanguages: Set<Language> {
+        Set(Locale.preferredLanguages.compactMap(Language.init(languageCode:)))
+    }
+
     /// A sound on each correction; off by default.
     var playsSound: Bool {
         didSet { defaults.set(playsSound, forKey: Key.playsSound) }
@@ -151,6 +179,7 @@ final class SettingsStore {
         playsSound = defaults.bool(forKey: Key.playsSound)
         fixesTypos = defaults.object(forKey: Key.fixesTypos) as? Bool ?? true
         restoresAccents = defaults.object(forKey: Key.restoresAccents) as? Bool ?? true
+        chosenExtraLanguages = defaults.stringArray(forKey: Key.extraLanguages).map { Set($0.compactMap(Language.init(rawValue:))) }
         // Before switchesLayout existed, 0 meant "never switch"
         let stored = defaults.object(forKey: Key.switchThreshold) as? Int ?? 2
         switchesLayout = defaults.object(forKey: Key.switchesLayout) as? Bool ?? (stored > 0)
@@ -171,7 +200,7 @@ final class SettingsStore {
         Engine.Settings(
             switchThreshold: switchThreshold, exceptions: Set(exceptions), learnedWords: Set(learnedWords), isPaused: isPaused,
             excludedApps: excludedApps, fixesTypos: fixesTypos, typoFixExcludedApps: Self.typoFixExcludedApps,
-            restoresAccents: restoresAccents)
+            restoresAccents: restoresAccents, extraLanguages: extraLanguages)
     }
 
     /// An exception is never learned at the same time, and the other way round. A word added again

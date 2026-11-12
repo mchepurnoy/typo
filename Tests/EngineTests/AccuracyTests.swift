@@ -22,11 +22,14 @@ private struct Scenario: CustomTestStringConvertible, Sendable {
     let intendedOn: FixtureLayout
     let typedOn: FixtureLayout
     let enabled: [FixtureLayout]
+    /// Languages written without a layout of their own (Spanish on U.S.).
+    var extra: Set<Language> = []
 
     var isWrongLayout: Bool { intendedOn.language?.script != typedOn.language?.script }
     var testDescription: String {
         "\(language.rawValue) words typed on \(typedOn.id.split(separator: ".").last!)"
             + (enabled.count > 2 ? " (+\(enabled.count - 2) layouts)" : "")
+            + (extra.isEmpty ? "" : " with \(extra.map(\.rawValue).sorted().joined(separator: "+")) extra")
     }
 }
 
@@ -59,7 +62,9 @@ private struct AcceptsOtherScript: SpellChecker {
 private let usesModel = ProcessInfo.processInfo.environment["TYPO_RULES_ONLY"] == nil
 
 private func run(_ scenario: Scenario, spellChecker: (any SpellChecker)? = nil) -> Tally {
-    var engine = Engine(languageModels: BundledModels.all, spellChecker: spellChecker, usesDetectorModel: usesModel)
+    var engine = Engine(
+        languageModels: BundledModels.all, spellChecker: spellChecker, settings: .init(extraLanguages: scenario.extra),
+        usesDetectorModel: usesModel)
     let layouts = ActiveLayouts(current: scenario.typedOn, enabled: scenario.enabled)
     var tally = Tally()
     for word in corpus(scenario.language) {
@@ -96,6 +101,8 @@ struct AccuracyTests {
         Scenario(language: .english, intendedOn: us, typedOn: ru, enabled: [us, ru]),
         Scenario(language: .german, intendedOn: de, typedOn: ru, enabled: [de, ru]),
         Scenario(language: .spanish, intendedOn: es, typedOn: ru, enabled: [es, ru]),
+        // An extra language's words are known, but must not keep Russian words from being corrected ("tot" is "еще")
+        Scenario(language: .russian, intendedOn: ru, typedOn: us, enabled: [us, ru], extra: [.spanish, .german]),
     ])
     private func recall(_ scenario: Scenario) {
         let tally = run(scenario)
@@ -114,6 +121,7 @@ struct AccuracyTests {
         Scenario(language: .spanish, intendedOn: es, typedOn: es, enabled: [es, ru]),
         Scenario(language: .german, intendedOn: us, typedOn: us, enabled: [us, de, ru]),
         Scenario(language: .spanish, intendedOn: us, typedOn: us, enabled: [us, es, ru]),
+        Scenario(language: .english, intendedOn: us, typedOn: us, enabled: [us, ru], extra: [.spanish, .german]),
     ])
     private func falsePositives(_ scenario: Scenario) {
         let tally = run(scenario)
@@ -133,10 +141,15 @@ struct AccuracyTests {
         #expect(quirky.wrong.count <= baseline.wrong.count, "\(quirky.wrong)")
     }
 
-    @Test("Deciding a word takes at most 1 ms at p99", .timing)
-    func decisionTime() {
-        var engine = Engine(languageModels: BundledModels.all)
-        let layouts = ActiveLayouts(current: Self.us, enabled: [Self.us, Self.ru, Self.de])
+    @Test("Deciding a word takes at most 1 ms at p99", .timing, arguments: [
+        ([Self.us, Self.ru, Self.de], Set<Language>()),
+        // Two extra languages judge every Latin word too, and their accent tables are looked up
+        ([Self.us, Self.ru], Set<Language>([.spanish, .german])),
+    ])
+    func decisionTime(_ enabled: [FixtureLayout], _ extra: Set<Language>) {
+        var engine = Engine(
+            languageModels: BundledModels.all, accentTables: BundledModels.accents, settings: .init(extraLanguages: extra))
+        let layouts = ActiveLayouts(current: Self.us, enabled: enabled)
         let clock = ContinuousClock()
         let p99 = bestP99 {
             var durations: [Duration] = []
@@ -147,7 +160,7 @@ struct AccuracyTests {
             }
             return durations
         }
-        print("decision p99 \(p99)")
+        print("decision p99 \(p99) with \(extra.map(\.rawValue).sorted()) extra")
         #expect(p99 <= .milliseconds(1))
     }
 }

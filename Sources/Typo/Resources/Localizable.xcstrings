@@ -403,6 +403,16 @@
         }
       }
     },
+    "Languages without a layout": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Языки без раскладки"
+          }
+        }
+      }
+    },
     "Launch at login": {
       "localizations": {
         "ru": {
@@ -749,6 +759,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Переключать раскладку автоматически"
+          }
+        }
+      }
+    },
+    "Tick the languages you type on another language's layout, e.g. Spanish on U.S.: Typo then restores their accents and fixes their typos. Languages listed in Language & Region settings start ticked.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отметьте языки, на которых печатаете в раскладке другого языка, например испанский в U.S.: Typo будет расставлять в них акценты и исправлять опечатки. Сначала отмечены языки из настроек «Язык и регион»."
           }
         }
       }

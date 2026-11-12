@@ -41,6 +41,7 @@ Setup: turn off System Settings → Keyboard → Input Sources → "Automaticall
 - [ ] Upgrade: exceptions saved by 0.2.1 or earlier are all still listed, A to Z, after the ones added since (to repeat: `defaults delete app.typo.Typo.dev wordsInAddedOrder` and relaunch)
 - [ ] Thousands of words: quit Typo, back up its settings with `defaults export app.typo.Typo.dev ~/typo-settings.plist`, write 10 000 exceptions with `defaults write app.typo.Typo.dev exceptions -array $(python3 -c 'import random, string; print(" ".join("".join(random.choices(string.ascii_lowercase, k=random.randint(4, 10))) for _ in range(10000)))')`, launch Typo. Settings → Words opens without a visible pause and shows 50 words and "Show all (N)"; typing in the search field and in "Add a word" stays smooth; "Show all" scrolls smoothly to the end; removing a word is immediate. Afterwards quit Typo and restore with `defaults import app.typo.Typo.dev ~/typo-settings.plist`
 - [ ] Layouts lists every enabled layout, with U.S. and Russian – PC marked supported and an unsupported one (e.g. Ukrainian) marked "Not supported"
+- [ ] Layouts → "Languages without a layout" lists the supported languages with no enabled layout (with U.S. and Russian – PC: German and Spanish). With Spanish in System Settings → General → Language & Region → Preferred Languages and the list never changed (`defaults read app.typo.Typo.dev extraLanguages` finds nothing), Spanish starts ticked and German not. Untick Spanish, quit and relaunch: it stays unticked. Enable the Spanish layout: Spanish leaves the list
 
 ## Correction
 
@@ -91,6 +92,9 @@ Run in each app: TextEdit, Safari (a text field), Chrome (a text field), Termina
 | `tot␣` on U.S. (wrong layout) → `ещё ` | | | | | |
 | ⌫ right after `еще␣` → `ещё` back to `еще `, and `еще` is left alone from then on | | | | | |
 | Settings → General → "Add ё, umlauts and accents" off: `еще␣` stays | | | | | |
+| Only U.S. and Russian – PC enabled, Settings → Layouts → Spanish ticked under "Languages without a layout": `ninos␣` → `niños ` (`ñ` is typed though no enabled layout has a key for it) | | | | | |
+| Same setup: ⌫ right after `ninos␣` → `niños` back to `ninos `, and `ninos` is left alone from then on | | | | | |
+| Same setup with Spanish unticked: `ninos␣` stays | | | | | |
 
 ## Fast typing
 

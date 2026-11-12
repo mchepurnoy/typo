@@ -23,12 +23,18 @@ public struct Engine: Sendable {
         public var typoFixExcludedApps: Set<String>
         /// Whether a certain ё, umlaut or accent the user left out is restored ("еще" → "ещё").
         public var restoresAccents: Bool
+        /// Extra languages: supported languages the user writes on a layout of another language of
+        /// the same script (Spanish on U.S.). They judge words typed on any enabled layout of their
+        /// script as if they had a layout of their own, but are never a correction's target: there
+        /// is no layout to re-read the keys under.
+        public var extraLanguages: Set<Language>
 
         public init(
             switchThreshold: Int? = 2, exceptions: Set<String> = [], learnedWords: Set<String> = [],
             isPaused: Bool = false, excludedApps: Set<String> = [], fixesTypos: Bool = true,
-            typoFixExcludedApps: Set<String> = [], restoresAccents: Bool = true
+            typoFixExcludedApps: Set<String> = [], restoresAccents: Bool = true, extraLanguages: Set<Language> = []
         ) {
+            self.extraLanguages = extraLanguages
             self.restoresAccents = restoresAccents
             self.fixesTypos = fixesTypos
             self.typoFixExcludedApps = typoFixExcludedApps
@@ -40,7 +46,10 @@ public struct Engine: Sendable {
         }
     }
 
-    public var settings: Settings
+    public var settings: Settings {
+        // The detector judges words in them; keeping its copy here spares every call passing them
+        didSet { detector.extraLanguages = settings.extraLanguages }
+    }
     private var word: [Key] = []
     /// The script of the layout each key of `word` was typed on. More than one means the screen
     /// shows mixed scripts (the layout was switched mid-word without a chord): the word is skipped.
@@ -74,7 +83,7 @@ public struct Engine: Sendable {
     /// A word erased completely: if the next word is typed with the same keys on a layout of
     /// another script, the erased spelling is learned.
     private var erased: (keys: [Key], layout: any Layout)?
-    private let detector: Detector
+    private var detector: Detector
 
     private struct Revertible {
         let correction: Correction
@@ -113,6 +122,7 @@ public struct Engine: Sendable {
         detector = Detector(
             models: languageModels, spellChecker: spellChecker, model: usesDetectorModel ? .trained : nil,
             accentTables: accentTables)
+        detector.extraLanguages = settings.extraLanguages
         self.settings = settings
     }
 

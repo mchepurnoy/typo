@@ -45,6 +45,9 @@ struct Detector {
     /// Decides re-readings of 3+ letters instead of the hand-set margins, when given.
     let model: DetectorModel?
     let accentTables: [Language: AccentTable]
+    /// Extra languages: judge words typed on an enabled layout of their script, like the languages
+    /// of the enabled layouts, but are never a target (see `Engine.Settings.extraLanguages`).
+    var extraLanguages: Set<Language> = []
 
     init(
         models: [LanguageModel], spellChecker: (any SpellChecker)? = nil, model: DetectorModel? = nil,
@@ -67,8 +70,8 @@ struct Detector {
     }
 
     /// The word with a certain ё, umlaut or accent restored ("еще" → "ещё", "konnen" → "können"),
-    /// in a language of the enabled layouts of its script. Left alone if another enabled language
-    /// knows the word as typed ("fur" with English enabled).
+    /// in a language of the enabled layouts of its script or an extra language. Left alone if
+    /// another of those languages knows the word as typed ("fur" with English enabled).
     func accentRestoration(for word: [Key], layouts: ActiveLayouts, exceptions: Set<String>) -> Correction? {
         guard let readings = readings(of: word, layouts: layouts, recent: [:]),
               !Self.isSkipped(readings.original),
@@ -103,8 +106,17 @@ struct Detector {
               !exceptions.contains(readings.typed.lowercased())
         else { return nil }
 
-        let typedJudgements = readings.sourceModels.map { Judgement(of: readings.typed, in: $0, spellChecker: spellChecker) }
-        let typedKnown = typedJudgements.contains { $0.isKnown }
+        let allJudgements = readings.sourceModels.map { model in
+            (model.language, Judgement(of: readings.typed, in: model, spellChecker: spellChecker))
+        }
+        // A word an extra language knows is known: only a known re-reading may replace it. But how
+        // plausible it is as typed is weighed in the layouts' languages only: the user writes the
+        // extra language now and then, the layouts' languages all the time, so "tot" on U.S. with
+        // German extra is still "ещё" (weighed in German too, it stayed "tot", and held-out Russian
+        // typed on U.S. lost 1% of its corrections)
+        let typedKnown = allJudgements.contains { $0.1.isKnown }
+        let weighed = allJudgements.filter { !readings.extraOnly.contains($0.0) }.map(\.1)
+        let typedJudgements = weighed.isEmpty ? allJudgements.map(\.1) : weighed
         guard let typedPlausibility = typedJudgements.map(\.plausibility).max() else { return nil }
         let typedFrequency = typedJudgements.compactMap(\.frequency).max()
 
@@ -223,11 +235,19 @@ struct Detector {
         let keys = Array(word[Self.coreRange(typedKeys)])
         guard keys.count == typed.count else { return nil }
 
-        var candidates: [String: Double] = [:]
+        // One pass over the slips with the letters of every source language, each looked up in all
+        // of them: with extra languages, a pass per language took over 1 ms
+        var alphabet: [Character] = []
+        var vowels = Set<Character>()
         for model in readings.sourceModels {
-            Self.forEachSlip(of: typed, keys: keys, layout: layouts.current, language: model.language) { edit in
-                if let frequency = model.frequency(ofNormalized: LanguageModel.normalize(edit)),
-                   frequency > candidates[edit] ?? -.infinity {
+            alphabet += Self.alphabet(model.language).filter { !alphabet.contains($0) }
+            vowels.formUnion(Self.vowels(model.language))
+        }
+        var candidates: [String: Double] = [:]
+        Self.forEachSlip(of: typed, keys: keys, layout: layouts.current, alphabet: alphabet, vowels: vowels) { edit in
+            let normalized = LanguageModel.normalize(edit)
+            for model in readings.sourceModels {
+                if let frequency = model.frequency(ofNormalized: normalized), frequency > candidates[edit] ?? -.infinity {
                     candidates[edit] = frequency
                 }
             }
@@ -261,9 +281,11 @@ struct Detector {
 
     /// Calls `body` with every plausible slip of `word` (some more than once), building each in a
     /// reused buffer. `keys` are the word's keys, `layout` the one it was typed on. Edits work on
-    /// the letters as typed, so an "ё" the user typed survives the fix.
+    /// the letters as typed, so an "ё" the user typed survives the fix. `alphabet` and `vowels` are
+    /// those of the languages the word is judged in.
     private static func forEachSlip(
-        of word: String, keys: [Key], layout: any Layout, language: Language, _ body: (String) -> Void
+        of word: String, keys: [Key], layout: any Layout, alphabet: [Character], vowels: Set<Character>,
+        _ body: (String) -> Void
     ) {
         let letters = Array(word)
         let n = letters.count
@@ -276,7 +298,6 @@ struct Detector {
             buffer.swapAt(i, i + 1)
         }
         guard n >= 4 else { return }
-        let vowels = Self.vowels(language)
         for i in 0..<n {
             // substitute: a neighbouring key, or a vowel for a vowel
             var replacements = Set(KeyboardGeometry.neighbours(of: keys[i].code).compactMap { code in
@@ -300,7 +321,6 @@ struct Detector {
             }
         }
         // insert a missing letter, inside the word
-        let alphabet = Self.alphabet(language)
         for i in 1..<n {
             buffer.insert(" ", at: i)
             for letter in alphabet {
@@ -360,6 +380,8 @@ struct Detector {
         let original: String
         let typed: String
         let sourceModels: [LanguageModel]
+        /// The source languages that are there only as extra languages, with no enabled layout.
+        let extraOnly: Set<Language>
         let targets: [Target]
     }
 
@@ -373,8 +395,11 @@ struct Detector {
         guard !typed.isEmpty else { return nil }
 
         // Judged in the languages of the enabled layouts of its script (user story 7): with only
-        // U.S. and Russian enabled, "tot" is not German, it is "еще" typed on U.S.
-        let sourceLanguages = Set((layouts.enabled + [layouts.current]).compactMap(\.language).filter { $0.script == sourceScript })
+        // U.S. and Russian enabled, "tot" is not German, it is "еще" typed on U.S. Extra languages
+        // judge it too, the user writes them on these layouts; targets stay layouts only
+        let layoutLanguages = Set((layouts.enabled + [layouts.current]).compactMap(\.language).filter { $0.script == sourceScript })
+        let extraOnly = extraLanguages.filter { $0.script == sourceScript }.subtracting(layoutLanguages)
+        let sourceLanguages = layoutLanguages.union(extraOnly)
         let targets = targets(excluding: sourceScript, layouts: layouts, recent: recent).compactMap { target -> Readings.Target? in
             guard let model = target.language.flatMap({ models[$0] }) else { return nil }
             let rereadKeys = word.map(target.character(for:))
@@ -385,7 +410,7 @@ struct Detector {
         }
         return Readings(
             original: typedKeys.joined(), typed: typed,
-            sourceModels: sourceLanguages.compactMap { models[$0] }, targets: targets)
+            sourceModels: sourceLanguages.compactMap { models[$0] }, extraOnly: extraOnly, targets: targets)
     }
 
     private static func spellConfirms(_ word: String, in language: Language, _ spellChecker: (any SpellChecker)?) -> Bool {

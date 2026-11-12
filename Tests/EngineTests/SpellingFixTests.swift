@@ -110,11 +110,15 @@ struct SpellingFixTests {
         #expect(engine.handle(.boundary(.space), layouts: layouts) == .pass)
     }
 
-    @Test("Looking for a fix takes at most 1 ms at p99, even when every word is called misspelled", .timing)
-    func decisionTime() throws {
+    @Test("Looking for a fix takes at most 1 ms at p99, even when every word is called misspelled", .timing,
+          arguments: [Set<Language>(), [.spanish, .german]])
+    func decisionTime(_ extra: Set<Language>) throws {
         let url = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "Accuracy/en.txt")
         let words = try String(contentsOf: url, encoding: .utf8).split(separator: "\n").map(String.init)
-        var engine = Engine(languageModels: BundledModels.all, spellChecker: KnownWordsSpellChecker { _ in false })
+        // With extra languages, each one's lexicon offers candidates too
+        var engine = Engine(
+            languageModels: BundledModels.all, spellChecker: KnownWordsSpellChecker { _ in false },
+            settings: .init(extraLanguages: extra))
         let layouts = ActiveLayouts(current: us, enabled: [us, russianPC])
         let clock = ContinuousClock()
         let p99 = bestP99 {
@@ -126,7 +130,7 @@ struct SpellingFixTests {
             }
             return durations
         }
-        print("spelling decision p99 \(p99)")
+        print("spelling decision p99 \(p99) with \(extra.map(\.rawValue).sorted()) extra")
         #expect(p99 <= .milliseconds(1))
     }
 
